@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radarshop - Gestión de Negocio</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        /* MANTENIENDO TU ESTILO ORIGINAL */
+        :root {
+            --radar-white: #d8cccc;
+            --radar-orange: #fe7301;
+            --green-dark: #0F6E56;
+            --green-light: #f0d0ac;
+            --green-text: #887004;
+            --amber: #EF9F27;
+            --amber-light: #FAEEDA;
+            --amber-text: #854F0B;
+            --red: #E24B4A;
+            --red-light: #FCEBEB;
+            --red-text: #A32D2D;
+            --blue-light: #E6F1FB;
+            --blue-text: #185FA5;
+            --bg: #cecac1;
+            --surface: #FFFFFF;
+            --border: rgba(0,0,0,0.08);
+            --border-strong: rgba(0,0,0,0.14);
+            --text: #1A1A1A;
+            --text-light: #666666;
+        }
+
+        body { background-color: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; display: flex; height: 100vh; }
+        .sidebar { width: 260px; background-color: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 24px 16px; }
+        .main-content { flex: 1; overflow-y: auto; padding: 40px; }
+        .nav-item { padding: 10px 12px; border-radius: 8px; color: var(--text-light); text-decoration: none; margin-bottom: 4px; display: flex; align-items: center; transition: all 0.2s; cursor: pointer; }
+        .nav-item:hover { background-color: rgba(0,0,0,0.04); color: var(--text); }
+        .nav-item.active { background-color: var(--radar-orange); color: white; }
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); padding: 24px; margin-bottom: 24px; }
+        .table th { font-weight: 600; color: var(--text-light); border-bottom-width: 1px; padding: 12px; }
+        .badge-status { padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+        .status-ok { background: #E6F4EA; color: #1E7E34; }
+        .status-warning { background: var(--red-light); color: var(--red-text); }
+        .btn-primary { background-color: var(--radar-orange); border: none; border-radius: 8px; padding: 10px 20px; font-weight: 600; }
+        .btn-primary:hover { background-color: #e66700; }
+        /* Sidebar */
+        .sidebar-header { padding: 1.5rem 1.25rem 1rem; border-bottom: 1px solid var(--border); }
+        .brand { display: flex; align-items: center; gap: 10px; }
+        .brand-icon { width: 32px; height: 32px; background: var(--radar-orange); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .brand-icon svg { width: 17px; height: 17px; }
+        .brand-name { font-size: 15px; font-weight: 600; color: var(--text); }
+        .brand-sub { font-size: 11px; color: var(--text-2); margin-top: 1px; }
+        .sidebar-nav { padding: 1rem 0.75rem; flex: 1; }
+        .nav-label { font-size: 10px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: .08em; padding: 0 0.5rem; margin: 1rem 0 0.4rem; }
+        .nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; color: var(--text-2); cursor: pointer; transition: all .15s; font-size: 13.5px; border: none; background: none; width: 100%; text-align: left; }
+        .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+        .nav-item:hover { background: var(--bg); color: var(--text); }
+        .nav-item.active { background: var(--green-light); color: var(--green-text); font-weight: 500; }
+        .nav-item .badge-count { margin-left: auto; font-size: 10px; background: var(--red); color: #fff; border-radius: 10px; padding: 1px 6px; font-weight: 600; }
+        .sidebar-footer { padding: 1rem; border-top: 1px solid var(--border); }
+        .export-btn { width: 100%; padding: 9px; background: var(--radar-orange); color: #fff; border: none; border-radius: var(--radius); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: background .15s; display: flex; align-items: center; justify-content: center; gap: 7px; }
+        .export-btn:hover { background: var(--amber); }
+        .export-btn svg { width: 15px; height: 15px; }
+        /* Metrics */
+        .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 1.75rem; }
+        .metric { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; }
+        .metric-label { font-size: 12px; color: var(--text-2); margin-bottom: 6px; }
+        .metric-val { font-size: 26px; font-weight: 600; color: var(--text); line-height: 1; }
+        .metric-val.green { color: var(--green-dark); }
+        .metric-val.red { color: var(--red-text); }
+        .metric-sub { font-size: 11px; color: var(--text-3); margin-top: 4px; }
+        .pbar { height: 4px; background: var(--bg); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+        .pfill { height: 100%; background: var(--green); border-radius: 2px; transition: width .4s; }
+        /* Toolbar */
+        .toolbar { display: flex; gap: 10px; margin-bottom: 1.25rem; flex-wrap: wrap; align-items: center; }
+        .btn { padding: 8px 16px; font-size: 13px; font-family: 'DM Sans', sans-serif; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); color: var(--text); cursor: pointer; transition: all .15s; display: inline-flex; align-items: center; gap: 6px; }
+        .btn:hover { background: var(--bg); }
+        .btn-primary { background: var(--radar-orange); color: #fff; border-color: var(--amber); }
+        .btn-primary:hover { background: var(--amber); border-color: var(--amber); }
+        .btn-sm { padding: 5px 10px; font-size: 12px; }
+        .btn-danger { border-color: var(--red); color: var(--red-text); background: none; }
+        .btn-danger:hover { background: var(--red-light); }
+        .search { flex: 1; min-width: 200px; padding: 8px 12px; font-size: 13px; font-family: 'DM Sans', sans-serif; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); color: var(--text); outline: none; transition: border-color .15s; }
+        .search:focus { border-color: var(--green); }
+        .select-filter { padding: 8px 12px; font-size: 13px; font-family: 'DM Sans', sans-serif; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); color: var(--text); cursor: pointer; }
+        /* Form card */
+        .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1.5rem; display: none; }
+        .form-card.open { display: block; animation: fadeIn .15s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+        .form-title { font-size: 15px; font-weight: 600; margin-bottom: 1.25rem; color: var(--text); }
+        .fgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
+        .field { display: flex; flex-direction: column; gap: 5px; }
+        .field label { font-size: 12px; color: var(--text-2); font-weight: 500; }
+        .field input, .field select, .field textarea {
+        padding: 8px 11px; font-size: 13px; font-family: 'DM Sans', sans-serif;
+        border: 1px solid var(--border-strong); border-radius: var(--radius);
+        background: var(--bg); color: var(--text); outline: none; transition: border-color .15s;
+        }
+        .field input:focus, .field select:focus { border-color: var(--green); background: var(--surface); }
+        .form-footer { display: flex; gap: 10px; margin-top: 1.5rem; justify-content: flex-end; border-top: 1px solid var(--border); padding-top: 1rem; }
+        /* Table */
+        .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+        .table-wrap table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .table-wrap th { background: var(--bg); padding: 10px 14px; text-align: left; font-size: 11.5px; font-weight: 600; color: var(--text-2); border-bottom: 1px solid var(--border); white-space: nowrap; text-transform: uppercase; letter-spacing: .04em; }
+        .table-wrap td { padding: 11px 14px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+        .table-wrap tr:last-child td { border-bottom: none; }
+        .table-wrap tr:hover td { background: rgba(29,158,117,0.03); }
+        .cell-name { font-weight: 500; }
+        .cell-code { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-3); display: block; margin-top: 2px; }
+
+        /* Badges */
+        .badge { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 20px; font-size: 11.5px; font-weight: 500; }
+        .badge-green { background: var(--green-light); color: var(--green-text); }
+        .badge-amber { background: var(--amber-light); color: var(--amber-text); }
+        .badge-red { background: var(--red-light); color: var(--red-text); }
+        .badge-blue { background: var(--blue-text); color: var(--blue-text); }
+        .badge-gray { background: var(--bg); color: var(--text-2); }
+        /* Stars */
+        .stars { color: var(--amber); font-size: 13px; letter-spacing: 1px; }
+
+        /* Empty */
+        .empty { text-align: center; padding: 3.5rem 2rem; color: var(--text-2); }
+        .empty-icon { font-size: 2.5rem; margin-bottom: 1rem; opacity: .5; }
+        .empty p { font-size: 14px; margin-bottom: 1.25rem; }
+
+        /* Toast */
+        .toast { position: fixed; bottom: 24px; right: 24px; background: var(--text); color: #fff; padding: 12px 18px; border-radius: var(--radius); font-size: 13px; font-weight: 500; transform: translateY(80px); opacity: 0; transition: all .25s; z-index: 999; display: flex; align-items: center; gap: 8px; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { background: var(--green-dark); }
+        .toast.error { background: var(--red-text); }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+        .sidebar { width: 100%; height: auto; position: relative; }
+        .main { margin-left: 0; padding: 1rem; }
+        .layout { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="mb-4 px-2">
+            <h4 style="color: var(--radar-orange); font-weight: 800;">RADARSHOP</h4>
+            <h5 style="color: var(--text-light); font-size: small;">A un click de tu compra!</h5>
+        </div>
+        <div class="nav-item active" onclick="showSection('inventario', this)">📦 Inventario</div>
+        <div class="nav-item" onclick="showSection('nuevo-producto', this)">➕ Agregar Producto</div>
+        <div class="nav-item" onclick="showSection('ventas', this)">💰 Ventas</div>
+        <div class="nav-item" onclick="showSection('clientes', this)">👥 Clientes</div>
+        <div class="nav-item" onclick="showSection('consultas',this)">📄 Consultas</div>
+        <div class="nav-item" onclick="showSection('proveedores',this)">🏢 Proveedores</div>
+        <div class="mt-auto">
+            <a href="/api/export/inventory" class="nav-item text-decoration-none">📥 Descargar Excel</a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        
+        <div id="section-inventario" class="content-section">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Inventario General</h2>
+                <input type="text" id="searchBar" class="form-control w-25" placeholder="Buscar producto..." onkeyup="filterTable()">
+            </div>
+            <div class="card">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Producto</th>
+                            <th>Color</th>
+                            <th>Costo</th>
+                            <th>P. Venta</th>
+                            <th>Stock</th>
+                            <th>Ubicación</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventory-table">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="section-nuevo-producto" class="content-section" style="display:none;">
+            <h2>📦Nuevo Producto</h2>
+            <div class="card">
+                <form id="product-form">
+                    <div class="row">
+                        <div class="col-md-4 mb-3"><label class="form-label">SKU (Automático)</label><input type="text" id="p-id" class="form-control" placeholder="Generado por el sistema" readonly></div>
+                        <div class="col-md-5 mb-3"><label class="form-label">Nombre del Producto *</label><input type="text" id="p-name" class="form-control" required></div>
+                        <div class="col-md-3 mb-3"><label class="form-label">Categoria *</label><select id="p-category" class="form-select">
+                        <option value="">Seleccionar categoría</option>
+                        </select>
+                    </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3 mb-3"><label class="form-label">Color</label><input type="text" id="p-color" class="form-control"></div>
+                        <div class="col-md-3 mb-3"><label class="form-label">Costo Unit.(S/)</label><input type="number" step="0.01" id="p-cost" class="form-control" required></div>
+                        <div class="col-md-3 mb-3"><label class="form-label">Precio Venta (S/)</label><input type="number" step="0.01" id="p-retail" class="form-control" required></div>
+                        <div class="col-md-3 mb-3"><label class="form-label">Precio Mayorista (S/)</label><input type="number" step="0.01" id="p-wholesale" class="form-control"></div>
+                    </div>
+                    <div class="row">
+                      <div class="col-md-3 mb-3"><label class="form-label">Stock Inicial</label><input type="number" step="1" id="p-stock" class="form-control" required></div>
+                        <div class="col-md-4 mb-3"><label class="form-label">Ubicación</label><input type="text" id="p-location" class="form-control" placeholder="Ej: Estante A1"></div>
+                        <div class="col-md-3 mb-3"><label class="form-label">Proveedor</label><select id="p-provider" class="form-select">
+                        <option value="">Seleccionar proveedor...</option>
+                        </select>
+                    </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Guardar Producto</button>
+                </form>
+            </div>
+        </div>
+        <div id="section-ventas" class="content-section" style="display:none;">
+            <h3>Ventas</h3>
+            <p>Registra cada venta para rastrear ingresos y ganancias</p>
+            <div class="metrics" id="m-ventas"></div>
+            <div class="toolbar">
+            <button class="btn btn-primary" onclick="toggleForm('form-venta')">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="white" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Registrar venta
+        </button>
+        <input class="search" placeholder="Buscar por producto o cliente..." oninput="filterTable('tb-ventas',this.value)">
+        </div>
+        <div id="form-venta" class="form-card">
+        <div class="form-title">Registrar venta</div>
+        <div class="fgrid">
+          <div class="field"><label>Producto *</label><input id="fv-prod" placeholder="Nombre del producto"/></div>
+          <div class="field"><label>Cliente</label><input id="fv-cli" placeholder="Nombre del cliente"/></div>
+          <div class="field"><label>Cantidad</label><input id="fv-cant" type="number" placeholder="1" value="1" min="1"/></div>
+          <div class="field"><label>Precio cobrado (S/)</label><input id="fv-precio" type="number" placeholder="0.00" step="0.01"/></div>
+          <div class="field"><label>Costo del producto (S/)</label><input id="fv-costo" type="number" placeholder="0.00" step="0.01"/></div>
+          <div class="field"><label>Canal de venta</label><select id="fv-canal"><option>Facebook Marketplace</option><option>Instagram</option><option>TikTok</option><option>WhatsApp</option><option>Tienda online</option><option>Referido</option></select></div>
+          <div class="field"><label>Método de pago</label><select id="fv-pago"><option>Yape</option><option>Efectivo</option><option>Plin</option><option>Transferencia</option><option>Tarjeta</option></select></div>
+          <div class="field"><label>Tipo de entrega</label><select id="fv-entrega"><option>Delivery</option><option>Recojo en tienda</option></select></div>
+          <div class="field"><label>Delivery cobrado (S/)</label><input id="fv-del" type="number" placeholder="0" value="0" min="0"/></div>
+        </div>
+        <div class="form-footer">
+          <button class="btn" onclick="toggleForm('form-venta')">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveVenta()">Guardar venta</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th style="width:10%">Fecha</th><th style="width:18%">Producto</th>
+            <th style="width:14%">Cliente</th><th style="width:6%">Cant.</th>
+            <th style="width:10%">Ingreso</th><th style="width:10%">Ganancia</th>
+            <th style="width:13%">Canal</th><th style="width:10%">Pago</th><th style="width:9%">Acc.</th>
+          </tr></thead>
+          <tbody id="tb-ventas"></tbody>
+        </table>
+      </div>
+      <div id="empty-ventas" class="empty"><div class="empty-icon">💰</div><p>Sin ventas registradas. Empieza a registrar cada venta que hagas.</p><button class="btn btn-primary" onclick="toggleForm('form-venta')">+ Registrar venta</button></div>
+        </div>
+      <div id="section-proveedores" class="content-section" style="display:none;">
+    
+        <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Proveedores</h2>
+        <button class="btn btn-primary" onclick="toggleForm('form-proveedor')">+ Nuevo Proveedor</button>
+    </div>
+
+          <div id="form-proveedor" class="card mb-4" style="display:none;">
+              <h5>Registrar Proveedor</h5>
+              <form id="provider-form">
+                  <div class="row">
+                      <div class="col-md-3 mb-3"><label>Nombre/Empresa *</label><input type="text" id="pr-name" class="form-control" required></div>
+                      <div class="col-md-3 mb-3"><label>Contacto</label><input type="text" id="pr-contact" class="form-control"></div>
+                      <div class="col-md-3 mb-3"><label>Teléfono</label><input type="text" id="pr-phone" class="form-control"></div>
+                      <div class="col-md-3 mb-3"><label>Direccion</label><input type="text" id="pr-location" class="form-control"></div>
+                  </div>
+                  <button type="submit" class="btn btn-primary">Guardar Proveedor</button>
+              </form>
+          </div>
+
+          <div class="card">
+              <table class="table">
+                  <thead><tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Teléfono</th>
+                    <th>Dirección</th>
+                  </tr></thead>
+                  <tbody id="tb-proveedores"></tbody>
+              </table>
+          </div>
+      </div>
+      <!--Registro de clientes-->
+
+      <div id="section-clientes" class="content-section" style="display:none;">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+              <h2>Directorio de Clientes</h2>
+              <button class="btn btn-primary" onclick="toggleForm('form-cliente')">+ Nuevo Cliente</button>
+          </div>
+
+          <div id="form-cliente" class="card mb-4" style="display:none;">
+              <form id="client-form">
+                  <div class="row">
+                      <div class="col-md-4 mb-3"><label>Nombre</label><input type="text" id="cl-name" class="form-control" required></div>
+                      <div class="col-md-4 mb-3"><label>Teléfono</label><input type="text" id="cl-phone" class="form-control"></div>
+                      <div class="col-md-4 mb-3"><label>Distrito</label><input type="text" id="cl-dist" class="form-control"></div>
+                  </div>
+                  <button type="submit" class="btn btn-primary">Registrar Cliente</button>
+              </form>
+          </div>
+
+          <div class="card">
+              <table class="table">
+                  <thead><tr><th>ID</th><th>Nombre</th><th>Teléfono</th><th>Distrito</th></tr></thead>
+                  <tbody id="tb-clientes"></tbody>
+              </table>
+          </div>
+      </div>
+      <div id="section-consultas" class="content-section" style="display:none;">
+          <h3>Gestión de Consultas</h3>
+          <div class="card">
+              <form id="consulta-form">
+                  <div class="row">
+                      <div class="col-md-4 mb-3">
+                          <label>Producto consultado</label>
+                          <select id="con-prod" class="form-select"></select>
+                      </div>
+                      <div class="col-md-4 mb-3">
+                          <label>Canal</label>
+                          <select id="con-canal" class="form-select">
+                              <option>Facebook</option>
+                              <option>WhatsApp</option>
+                              <option>TikTok</option>
+                              <option>Instagram</option>
+                          </select>
+                      </div>
+                      <div class="col-md-4 mb-3">
+                          <label>Resultado</label>
+                          <select id="con-res" class="form-select">
+                              <option value="Pendiente">Pendiente</option>
+                              <option value="Compró">Compró</option>
+                              <option value="No compró">No compró</option>
+                          </select>
+                      </div>
+                  </div>
+                  <button type="submit" class="btn btn-primary w-100">Registrar Consulta</button>
+              </form>
+          </div>
+      </div>
+    </div>
+
+    <script>
+        // Navegación entre secciones
+        function showSection(sectionId, element) {
+            document.querySelectorAll('.content-section').forEach(s => s.style.display = 'none');
+            document.getElementById(`section-${sectionId}`).style.display = 'block';
+            
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            element.classList.add('active');
+        }
+
+        // Cargar Inventario
+        async function loadInventory() {
+            const res = await fetch('/api/products');
+            const products = await res.json();
+            const table = document.getElementById('inventory-table');
+            table.innerHTML = '';
+            
+            products.forEach(p => {
+                const isLow = p.stock_current <= p.stock_min;
+                table.innerHTML += `
+                    <tr>
+                <td><strong>${p.id}</strong></td>
+                <td>${p.name} <br><small class="text-muted">${p.category || 'Sin categoría'}</small></td>
+                <td>${p.color}</td>
+                <td>S/${p.cost_unit}</td> <td>S/ ${p.price_retail}</td>
+                <td>${p.stock_current}</td>
+                <td>${p.location || '---'}</td>
+                <td>
+                    <span class="badge-status ${isLow ? 'status-warning' : 'status-ok'}">
+                        ${isLow ? '⚠️ Reponer' : '✅ OK'}
+                    </span>
+                </td>
+            </tr>`;
+            });
+        }
+
+        // Guardar Producto
+        document.getElementById('product-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const data = {
+                name: document.getElementById('p-name').value,
+                color: document.getElementById('p-color').value,
+                category: document.getElementById('p-category').value,
+                cost_unit: parseFloat(document.getElementById('p-cost').value),
+                price_retail: parseFloat(document.getElementById('p-retail').value),
+                price_wholesale: parseFloat(document.getElementById('p-wholesale').value),
+                stock_current: parseInt(document.getElementById('p-stock').value),
+                location: document.getElementById('p-location').value
+            };
+
+            const res = await fetch('/api/products', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+
+            if (res.ok) {
+                const result = await res.json();
+                alert('Producto registrado con éxito');
+                document.getElementById('product-form').reset();
+                loadInventory();
+                showSection('inventario', document.querySelector('.nav-item'));
+            }
+        };
+
+        function filterTable() {
+            let filter = document.getElementById('searchBar').value.toUpperCase();
+            let rows = document.getElementById('inventory-table').getElementsByTagName('tr');
+            for (let row of rows) {
+                row.style.display = row.innerText.toUpperCase().includes(filter) ? "" : "none";
+            }
+        }
+        // Función para mostrar/ocultar el formulario (Asegúrate de tenerla en tu script)
+        function toggleForm(id) {
+            const form = document.getElementById(id);
+            form.style.display = (form.style.display === 'none' || form.style.display === '') ? 'block' : 'none';
+        }
+
+        // LÓGICA PARA GUARDAR VENTA
+        async function saveVenta() {
+            // Recopilamos los datos de tu HTML
+            const ventaData = {
+                product_name: document.getElementById('fv-prod').value,
+                client_name: document.getElementById('fv-cli').value,
+                quantity: parseInt(document.getElementById('fv-cant').value),
+                price_sold: parseFloat(document.getElementById('fv-precio').value),
+                cost_unit: parseFloat(document.getElementById('fv-costo').value),
+                channel: document.getElementById('fv-canal').value,
+                payment_method: document.getElementById('fv-pago').value,
+                delivery_type: document.getElementById('fv-entrega').value,
+                delivery_fee: parseFloat(document.getElementById('fv-del').value || 0)
+            };
+
+            // Validación simple
+            if (!ventaData.product_name || isNaN(ventaData.quantity)) {
+                alert("Por favor, ingresa el producto y la cantidad.");
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/sales', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(ventaData)
+                });
+
+                if (response.ok) {
+                    alert("¡Venta registrada con éxito!");
+                    toggleForm('form-venta'); // Cerramos el formulario
+                    document.getElementById('form-venta').querySelectorAll('input').forEach(i => i.value = ''); // Limpiamos
+                    loadInventory(); // Actualizamos la tabla de stock para ver el descuento
+                    loadSales();     // Función para cargar la tabla de ventas (la crearemos abajo)
+                } else {
+                    const err = await response.json();
+                    alert("Error: " + err.message);
+                }
+            } catch (error) {
+                console.error("Error en la venta:", error);
+            }
+        }
+        
+         // Función genérica para cargar Clientes
+        async function loadClients() {
+            const res = await fetch('/api/clients');
+            const clients = await res.json();
+            const table = document.getElementById('tb-clientes'); // Verifica este ID en tu HTML
+            if (!table) return;
+
+            table.innerHTML = '';
+            clients.forEach(c => {
+                table.innerHTML += `
+                    <tr>
+                        <td>${c.id}</td>
+                        <td>${c.name}</td>
+                        <td>${c.phone || '-'}</td>
+                        <td>${c.district || '-'}</td>
+                    </tr>`;
+            });
+        }
+
+        // Función para guardar Cliente (Corregida)
+        document.getElementById('client-form').onsubmit = async (e) => {
+            e.preventDefault(); // <--- CRÍTICO: Evita que la información desaparezca
+            
+            const data = {
+                name: document.getElementById('cl-name').value,
+                phone: document.getElementById('cl-phone').value,
+                district: document.getElementById('cl-dist').value
+            };
+
+            const res = await fetch('/api/clients', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (res.ok) {
+                alert("Cliente registrado");
+                document.getElementById('client-form').reset();
+                toggleForm('form-cliente'); // Oculta el formulario
+                await loadClients(); // <--- Recarga la lista sin recargar la página
+            }
+        };
+        // Carga los proveedores en el select del formulario de productos
+          async function refreshProviderSelect() {
+              const res = await fetch('/api/providers');
+              const providers = await res.json();
+              const select = document.getElementById('p-provider'); // Asegúrate que tu select tenga este ID
+              
+              if (select) {
+                  select.innerHTML = '<option value="">Seleccionar proveedor...</option>';
+                  providers.forEach(pr => {
+                      select.innerHTML += `<option value="${pr.id}">${pr.name}</option>`;
+                  });
+              }
+          }
+
+          // Carga la tabla de proveedores
+          async function loadProviders() {
+              const res = await fetch('/api/providers');
+              const data = await res.json();
+              const table = document.getElementById('tb-proveedores');
+              table.innerHTML = '';
+              data.forEach(p => {
+                  table.innerHTML += `<tr><td>${p.id}</td><td>${p.name}</td><td>${p.phone || '-'}</td><td>${p.location}</td></tr>`;
+              });
+          }
+
+          // Registro de Proveedor
+          document.getElementById('provider-form').onsubmit = async (e) => {
+              e.preventDefault();
+              const data = {
+                  name: document.getElementById('pr-name').value,
+                  contact: document.getElementById('pr-contact').value,
+                  phone: document.getElementById('pr-phone').value,
+                  location: document.getElementById('pr-location').value
+              };
+              await fetch('/api/providers', {
+                  method: 'POST',
+                  headers: {'Content-Type': 'application/json'},
+                  body: JSON.stringify(data)
+              });
+              alert("Proveedor registrado");
+              document.getElementById('provider-form').reset();
+              toggleForm('form-proveedor');
+              loadProviders();
+              refreshProviderSelect(); // <--- Esto hace que aparezca en la sección de productos inmediatamente
+          };
+
+        async function fillSelects() {
+                // 1. Jalar Proveedores para el formulario de Productos
+                const resProv = await fetch('/api/providers');
+                const providers = await resProv.json();
+                const selectProv = document.getElementById('p-provider');
+                
+                selectProv.innerHTML = '<option value="">Seleccionar proveedor...</option>';
+                providers.forEach(pr => {
+                    selectProv.innerHTML += `<option value="${pr.id}">${pr.name}</option>`;
+                });
+
+                // 2. Jalar Clientes para el formulario de Ventas (si ya lo tienes)
+                const resCli = await fetch('/api/clients');
+                const clients = await resCli.json();
+                const selectCli = document.getElementById('fv-cli-select'); // Asegúrate de tener este ID
+                if(selectCli) {
+                    selectCli.innerHTML = '<option value="">Seleccionar cliente...</option>';
+                    clients.forEach(c => {
+                        selectCli.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+                    });
+                }
+            }
+
+            // Llama a esta función al cargar la página o al cambiar de sección
+            window.onload = () => {
+            loadInventory();
+            loadProviders();
+            loadClients(); // <--- Agrégala aquí
+            refreshProviderSelect();
+        };
+
+        
+    </script>
+</body>
+</html>

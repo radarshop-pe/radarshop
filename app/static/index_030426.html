@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radarshop - Gestión de Negocio</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        :root {
+            --radar-white: #d8cccc;
+            --radar-orange: #fe7301;
+            --green-dark: #0F6E56;
+            --green-light: #f0d0ac;
+            --green-text: #887004;
+            --amber: #EF9F27;
+            --amber-light: #FAEEDA;
+            --amber-text: #854F0B;
+            --red: #E24B4A;
+            --red-light: #FCEBEB;
+            --red-text: #A32D2D;
+            --blue-light: #E6F1FB;
+            --blue-text: #185FA5;
+            --bg: #F7F6F3;
+            --surface: #FFFFFF;
+            --border: rgba(0,0,0,0.08);
+            --border-strong: rgba(0,0,0,0.14);
+            --text: #1A1A18;
+            --text-2: #6B6B67;
+            --text-3: #A8A8A4;
+            --radius: 10px;
+            --radius-lg: 14px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+        a { text-decoration: none; }
+
+        /* Layout */
+        .layout { display: flex; min-height: 100vh; }
+        .sidebar { width: 220px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; }
+        .main { margin-left: 220px; flex: 1; padding: 2rem; min-height: 100vh; }
+
+        /* Sidebar */
+        .sidebar-header { padding: 1.5rem 1.25rem 1rem; border-bottom: 1px solid var(--border); }
+        .brand { display: flex; align-items: center; gap: 10px; }
+        .brand-icon { width: 32px; height: 32px; background: var(--radar-orange); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .brand-icon svg { width: 17px; height: 17px; }
+        .brand-name { font-size: 15px; font-weight: 600; color: var(--text); }
+        .brand-sub { font-size: 11px; color: var(--text-2); margin-top: 1px; }
+        .sidebar-nav { padding: 1rem 0.75rem; flex: 1; }
+        .nav-label { font-size: 10px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: .08em; padding: 0 0.5rem; margin: 1rem 0 0.4rem; }
+        .nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; color: var(--text-2); cursor: pointer; transition: all .15s; font-size: 13.5px; border: none; background: none; width: 100%; text-align: left; }
+        .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+        .nav-item:hover { background: var(--bg); color: var(--text); }
+        .nav-item.active { background: var(--green-light); color: var(--green-text); font-weight: 500; }
+        .nav-item .badge-count { margin-left: auto; font-size: 10px; background: var(--red); color: #fff; border-radius: 10px; padding: 1px 6px; font-weight: 600; }
+        .sidebar-footer { padding: 1rem; border-top: 1px solid var(--border); }
+        .export-btn { width: 100%; padding: 9px; background: var(--radar-orange); color: #fff; border: none; border-radius: var(--radius); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: background .15s; display: flex; align-items: center; justify-content: center; gap: 7px; }
+        .export-btn:hover { background: var(--amber); }
+        .export-btn svg { width: 15px; height: 15px; }
+
+        /* Page header */
+        .page-header { margin-bottom: 1.75rem; }
+        .page-title { font-size: 22px; font-weight: 600; color: var(--text); }
+        .page-sub { font-size: 13px; color: var(--text-2); margin-top: 3px; }
+
+        /* Metrics */
+        .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 1.75rem; }
+        .metric { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; }
+        .metric-label { font-size: 12px; color: var(--text-2); margin-bottom: 6px; }
+        .metric-val { font-size: 26px; font-weight: 600; color: var(--text); line-height: 1; }
+        .metric-val.green { color: var(--green-dark); }
+        .metric-val.red { color: var(--red-text); }
+        .metric-sub { font-size: 11px; color: var(--text-3); margin-top: 4px; }
+        .pbar { height: 4px; background: var(--bg); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+        .pfill { height: 100%; background: var(--green); border-radius: 2px; transition: width .4s; }
+
+        /* Toolbar */
+        .toolbar { display: flex; gap: 10px; margin-bottom: 1.25rem; flex-wrap: wrap; align-items: center; }
+        .btn { padding: 8px 16px; font-size: 13px; font-family: 'DM Sans', sans-serif; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); color: var(--text); cursor: pointer; transition: all .15s; display: inline-flex; align-items: center; gap: 6px; }
+        .btn:hover { background: var(--bg); }
+        .btn-primary { background: var(--radar-orange); color: #fff; border-color: var(--amber); }
+        .btn-primary:hover { background: var(--amber); border-color: var(--amber); }
+        .btn-sm { padding: 5px 10px; font-size: 12px; }
+        .btn-danger { border-color: var(--red); color: var(--red-text); background: none; }
+        .btn-danger:hover { background: var(--red-light); }
+        .search { flex: 1; min-width: 200px; padding: 8px 12px; font-size: 13px; font-family: 'DM Sans', sans-serif; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); color: var(--text); outline: none; transition: border-color .15s; }
+        .search:focus { border-color: var(--green); }
+        .select-filter { padding: 8px 12px; font-size: 13px; font-family: 'DM Sans', sans-serif; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); color: var(--text); cursor: pointer; }
+
+        /* Alert */
+        .alert { background: var(--amber-light); border: 1px solid var(--amber); border-radius: var(--radius); padding: 10px 14px; font-size: 13px; color: var(--amber-text); margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; }
+
+        /* Form card */
+        .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1.5rem; display: none; }
+        .form-card.open { display: block; animation: fadeIn .15s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+        .form-title { font-size: 15px; font-weight: 600; margin-bottom: 1.25rem; color: var(--text); }
+        .fgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
+        .field { display: flex; flex-direction: column; gap: 5px; }
+        .field label { font-size: 12px; color: var(--text-2); font-weight: 500; }
+        .field input, .field select, .field textarea {
+        padding: 8px 11px; font-size: 13px; font-family: 'DM Sans', sans-serif;
+        border: 1px solid var(--border-strong); border-radius: var(--radius);
+        background: var(--bg); color: var(--text); outline: none; transition: border-color .15s;
+        }
+        .field input:focus, .field select:focus { border-color: var(--green); background: var(--surface); }
+        .form-footer { display: flex; gap: 10px; margin-top: 1.5rem; justify-content: flex-end; border-top: 1px solid var(--border); padding-top: 1rem; }
+
+        /* Table */
+        .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+        .table-wrap table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .table-wrap th { background: var(--bg); padding: 10px 14px; text-align: left; font-size: 11.5px; font-weight: 600; color: var(--text-2); border-bottom: 1px solid var(--border); white-space: nowrap; text-transform: uppercase; letter-spacing: .04em; }
+        .table-wrap td { padding: 11px 14px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+        .table-wrap tr:last-child td { border-bottom: none; }
+        .table-wrap tr:hover td { background: rgba(29,158,117,0.03); }
+        .cell-name { font-weight: 500; }
+        .cell-code { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-3); display: block; margin-top: 2px; }
+
+        /* Badges */
+        .badge { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 20px; font-size: 11.5px; font-weight: 500; }
+        .badge-green { background: var(--green-light); color: var(--green-text); }
+        .badge-amber { background: var(--amber-light); color: var(--amber-text); }
+        .badge-red { background: var(--red-light); color: var(--red-text); }
+        .badge-blue { background: var(--blue-light); color: var(--blue-text); }
+        .badge-gray { background: var(--bg); color: var(--text-2); }
+
+        /* Stars */
+        .stars { color: var(--amber); font-size: 13px; letter-spacing: 1px; }
+
+        /* Empty */
+        .empty { text-align: center; padding: 3.5rem 2rem; color: var(--text-2); }
+        .empty-icon { font-size: 2.5rem; margin-bottom: 1rem; opacity: .5; }
+        .empty p { font-size: 14px; margin-bottom: 1.25rem; }
+
+        /* Toast */
+        .toast { position: fixed; bottom: 24px; right: 24px; background: var(--text); color: #fff; padding: 12px 18px; border-radius: var(--radius); font-size: 13px; font-weight: 500; transform: translateY(80px); opacity: 0; transition: all .25s; z-index: 999; display: flex; align-items: center; gap: 8px; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { background: var(--green-dark); }
+        .toast.error { background: var(--red-text); }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+        .sidebar { width: 100%; height: auto; position: relative; }
+        .main { margin-left: 0; padding: 1rem; }
+        .layout { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 17 17" fill="none"><circle cx="8.5" cy="8.5" r="7" stroke="white" stroke-width="1.4"/><circle cx="8.5" cy="8.5" r="3.5" stroke="white" stroke-width="1.4"/><circle cx="8.5" cy="8.5" r="1.3" fill="white"/></svg>
+        </div>
+        <div><div class="brand-name">RADARSHOP</div><div class="brand-sub">A un click de tu compra</div></div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">Principal</div>
+      <button class="nav-item active" onclick="navTo('inventario',this)">
+        <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.4"/><rect x="9" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.4"/><rect x="1" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.4"/><rect x="9" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.4"/></svg>
+        Inventario
+        <span class="badge-count" id="badge-stock" style="display:none">0</span>
+      </button>
+      <button class="nav-item" onclick="navTo('ventas',this)">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h8M2 12h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        Ventas
+      </button>
+      <button class="nav-item" onclick="navTo('clientes',this)">
+        <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.4"/><path d="M2 14c0-3.314 2.686-5 6-5s6 1.686 6 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        Clientes
+      </button>
+      <button class="nav-item" onclick="navTo('consultas',this)">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M2 3a1 1 0 011-1h10a1 1 0 011 1v7a1 1 0 01-1 1H9l-3 3v-3H3a1 1 0 01-1-1V3z" stroke="currentColor" stroke-width="1.4"/></svg>
+        Consultas
+      </button>
+      <button class="nav-item" onclick="navTo('proveedores',this)">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M1 5l5-3 4 2.5L15 2v10l-5 2.5-4-2.5L1 14V5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+        Proveedores
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="export-btn" onclick="exportarExcel()">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M8 2v9M4 8l4 4 4-4M2 13h12" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Exportar a Excel
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="main">
+
+    <!-- INVENTARIO -->
+    <section id="sec-inventario" class="section">
+      <div class="page-header">
+        <div class="page-title">Inventario</div>
+        <div class="page-sub">Gestiona tus productos, precios y stock</div>
+      </div>
+      <div class="metrics" id="m-inv"></div>
+      <div id="alert-inv" class="alert" style="display:none">⚠️ Tienes productos con stock igual o por debajo del mínimo. Considera reponerlos.</div>
+      <div class="toolbar">
+        <button class="btn btn-primary" onclick="toggleForm('form-inv')">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="white" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Agregar producto
+        </button>
+        <input class="search" placeholder="Buscar producto, categoría..." oninput="filterTable('tb-inv',this.value)">
+        <select class="select-filter" onchange="filterCol('tb-inv',2,this.value)">
+          <option value="">Todas las categorías</option>
+          <option>Hogar</option><option>Cocina</option><option>Oficina</option>
+          <option>Accesorios mujer</option><option>Electrónica</option><option>Otros</option>
+        </select>
+      </div>
+      <div id="form-inv" class="form-card">
+        <div class="form-title">Nuevo producto</div>
+        <div class="fgrid">
+          <div class="field"><label>Nombre del producto *</label><input id="fi-nom" placeholder="Ej: Organizador escritorio"/></div>
+          <div class="field"><label>Categoría</label><select id="fi-cat"><option>Hogar</option><option>Cocina</option><option>Oficina</option><option>Accesorios mujer</option><option>Electrónica</option><option>Otros</option></select></div>
+          <div class="field"><label>Subcategoría</label><input id="fi-sub" placeholder="Ej: Almacenamiento"/></div>
+          <div class="field"><label>Proveedor</label><input id="fi-prov" placeholder="Nombre del proveedor"/></div>
+          <div class="field"><label>Costo unitario (S/)</label><input id="fi-costo" type="number" placeholder="0.00" step="0.01" min="0"/></div>
+          <div class="field"><label>Precio de venta (S/)</label><input id="fi-pv" type="number" placeholder="0.00" step="0.01" min="0"/></div>
+          <div class="field"><label>Precio mayorista (S/)</label><input id="fi-pm" type="number" placeholder="0.00" step="0.01" min="0"/></div>
+          <div class="field"><label>Stock actual</label><input id="fi-stock" type="number" placeholder="0" min="0"/></div>
+          <div class="field"><label>Stock mínimo (alerta)</label><input id="fi-smin" type="number" placeholder="5" min="0"/></div>
+          <div class="field"><label>Ubicación física</label><input id="fi-ubic" placeholder="Ej: Estante A2"/></div>
+          <div class="field"><label>Notas</label><input id="fi-notas" placeholder="Observaciones..."/></div>
+        </div>
+        <div class="form-footer">
+          <button class="btn" onclick="toggleForm('form-inv')">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveProducto()">Guardar producto</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th style="width:22%">Producto</th><th style="width:10%">Categoría</th>
+            <th style="width:9%">Costo</th><th style="width:9%">P. Venta</th>
+            <th style="width:9%">Margen</th><th style="width:7%">Stock</th>
+            <th style="width:10%">Proveedor</th><th style="width:8%">Estado</th>
+            <th style="width:10%">Ubicación</th><th style="width:6%">Acc.</th>
+          </tr></thead>
+          <tbody id="tb-inv"></tbody>
+        </table>
+      </div>
+      <div id="empty-inv" class="empty"><div class="empty-icon">📦</div><p>Sin productos aún. Agrega tu primer producto para empezar.</p><button class="btn btn-primary" onclick="toggleForm('form-inv')">+ Agregar producto</button></div>
+    </section>
+
+    <!-- VENTAS -->
+    <section id="sec-ventas" class="section" style="display:none">
+      <div class="page-header">
+        <div class="page-title">Ventas</div>
+        <div class="page-sub">Registra cada venta para rastrear ingresos y ganancias</div>
+      </div>
+      <div class="metrics" id="m-ventas"></div>
+      <div class="toolbar">
+        <button class="btn btn-primary" onclick="toggleForm('form-venta')">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="white" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Registrar venta
+        </button>
+        <input class="search" placeholder="Buscar por producto o cliente..." oninput="filterTable('tb-ventas',this.value)">
+      </div>
+      <div id="form-venta" class="form-card">
+        <div class="form-title">Registrar venta</div>
+        <div class="fgrid">
+          <div class="field"><label>Producto *</label><input id="fv-prod" placeholder="Nombre del producto"/></div>
+          <div class="field"><label>Cliente</label><input id="fv-cli" placeholder="Nombre del cliente"/></div>
+          <div class="field"><label>Cantidad</label><input id="fv-cant" type="number" placeholder="1" value="1" min="1"/></div>
+          <div class="field"><label>Precio cobrado (S/)</label><input id="fv-precio" type="number" placeholder="0.00" step="0.01"/></div>
+          <div class="field"><label>Costo del producto (S/)</label><input id="fv-costo" type="number" placeholder="0.00" step="0.01"/></div>
+          <div class="field"><label>Canal de venta</label><select id="fv-canal"><option>Facebook Marketplace</option><option>Instagram</option><option>TikTok</option><option>WhatsApp</option><option>Tienda online</option><option>Referido</option></select></div>
+          <div class="field"><label>Método de pago</label><select id="fv-pago"><option>Yape</option><option>Efectivo</option><option>Plin</option><option>Transferencia</option><option>Tarjeta</option></select></div>
+          <div class="field"><label>Tipo de entrega</label><select id="fv-entrega"><option>Delivery courier</option><option>Delivery app</option><option>Recojo en punto de encuentro</option></select></div>
+          <div class="field"><label>Delivery cobrado (S/)</label><input id="fv-del" type="number" placeholder="0" value="0" min="0"/></div>
+        </div>
+        <div class="form-footer">
+          <button class="btn" onclick="toggleForm('form-venta')">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveVenta()">Guardar venta</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th style="width:10%">Fecha</th><th style="width:18%">Producto</th>
+            <th style="width:14%">Cliente</th><th style="width:6%">Cant.</th>
+            <th style="width:10%">Ingreso</th><th style="width:10%">Ganancia</th>
+            <th style="width:13%">Canal</th><th style="width:10%">Pago</th><th style="width:9%">Acc.</th>
+          </tr></thead>
+          <tbody id="tb-ventas"></tbody>
+        </table>
+      </div>
+      <div id="empty-ventas" class="empty"><div class="empty-icon">💰</div><p>Sin ventas registradas. Empieza a registrar cada venta que hagas.</p><button class="btn btn-primary" onclick="toggleForm('form-venta')">+ Registrar venta</button></div>
+    </section>
+
+    <!-- CLIENTES -->
+    <section id="sec-clientes" class="section" style="display:none">
+      <div class="page-header">
+        <div class="page-title">Clientes</div>
+        <div class="page-sub">Base de datos de clientes y su historial</div>
+      </div>
+      <div class="metrics" id="m-clientes"></div>
+      <div class="toolbar">
+        <button class="btn btn-primary" onclick="toggleForm('form-cli')">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="white" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Agregar cliente
+        </button>
+        <input class="search" placeholder="Buscar cliente..." oninput="filterTable('tb-clientes',this.value)">
+      </div>
+      <div id="form-cli" class="form-card">
+        <div class="form-title">Nuevo cliente</div>
+        <div class="fgrid">
+          <div class="field"><label>Nombre completo *</label><input id="fc-nom" placeholder="Nombre"/></div>
+          <div class="field"><label>Teléfono</label><input id="fc-tel" placeholder="9XXXXXXXX"/></div>
+          <div class="field"><label>Distrito</label><input id="fc-dist" placeholder="Ej: San Miguel"/></div>
+          <div class="field"><label>Producto comprado</label><input id="fc-prod" placeholder="Producto principal"/></div>
+          <div class="field"><label>Total gastado (S/)</label><input id="fc-total" type="number" placeholder="0" step="0.01"/></div>
+          <div class="field"><label>Estado</label><select id="fc-est"><option>Activo</option><option>Frecuente</option><option>Inactivo</option></select></div>
+          <div class="field"><label>Notas</label><input id="fc-notas" placeholder="Observaciones..."/></div>
+        </div>
+        <div class="form-footer">
+          <button class="btn" onclick="toggleForm('form-cli')">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveCliente()">Guardar cliente</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th style="width:20%">Nombre</th><th style="width:13%">Teléfono</th>
+            <th style="width:13%">Distrito</th><th style="width:18%">Producto</th>
+            <th style="width:12%">Total gastado</th><th style="width:10%">Estado</th>
+            <th style="width:14%">Acc.</th>
+          </tr></thead>
+          <tbody id="tb-clientes"></tbody>
+        </table>
+      </div>
+      <div id="empty-clientes" class="empty"><div class="empty-icon">👥</div><p>Sin clientes registrados. Agrega a tus compradores para hacer seguimiento.</p><button class="btn btn-primary" onclick="toggleForm('form-cli')">+ Agregar cliente</button></div>
+    </section>
+
+    <!-- CONSULTAS -->
+    <section id="sec-consultas" class="section" style="display:none">
+      <div class="page-header">
+        <div class="page-title">Consultas</div>
+        <div class="page-sub">Registra cada consulta recibida para medir tu tasa de conversión</div>
+      </div>
+      <div class="metrics" id="m-consultas"></div>
+      <div class="toolbar">
+        <button class="btn btn-primary" onclick="toggleForm('form-co')">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="white" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Registrar consulta
+        </button>
+        <input class="search" placeholder="Buscar producto o cliente..." oninput="filterTable('tb-consultas',this.value)">
+      </div>
+      <div id="form-co" class="form-card">
+        <div class="form-title">Registrar consulta recibida</div>
+        <div class="fgrid">
+          <div class="field"><label>Producto consultado *</label><input id="fco-prod" placeholder="¿Por qué producto preguntaron?"/></div>
+          <div class="field"><label>Cliente</label><input id="fco-cli" placeholder="Nombre o alias"/></div>
+          <div class="field"><label>Canal</label><select id="fco-canal"><option>Facebook Marketplace</option><option>Instagram</option><option>TikTok</option><option>WhatsApp</option></select></div>
+          <div class="field"><label>Pregunta clave</label><select id="fco-preg"><option>¿Cuánto cuesta?</option><option>¿Tienen en stock?</option><option>Ubicación</option></select></div>
+          <div class="field"><label>Resultado</label><select id="fco-res"><option>Compró</option><option>No compró</option><option>Pendiente</option></select></div>
+          <div class="field"><label>Motivo de no compra</label><input id="fco-mot" placeholder="Ej: precio alto, sin stock..."/></div>
+        </div>
+        <div class="form-footer">
+          <button class="btn" onclick="toggleForm('form-co')">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveConsulta()">Guardar consulta</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th style="width:10%">Fecha</th><th style="width:18%">Producto</th>
+            <th style="width:13%">Cliente</th><th style="width:13%">Canal</th>
+            <th style="width:22%">Pregunta</th><th style="width:11%">Resultado</th>
+            <th style="width:13%">Motivo</th>
+          </tr></thead>
+          <tbody id="tb-consultas"></tbody>
+        </table>
+      </div>
+      <div id="empty-consultas" class="empty"><div class="empty-icon">💬</div><p>Registra cada consulta que recibes — son datos clave para optimizar tus ventas.</p><button class="btn btn-primary" onclick="toggleForm('form-co')">+ Registrar consulta</button></div>
+    </section>
+
+    <!-- PROVEEDORES -->
+    <section id="sec-proveedores" class="section" style="display:none">
+      <div class="page-header">
+        <div class="page-title">Proveedores</div>
+        <div class="page-sub">Directorio de proveedores e importadores</div>
+      </div>
+      <div class="toolbar">
+        <button class="btn btn-primary" onclick="toggleForm('form-prov')">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="white" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Agregar proveedor
+        </button>
+        <input class="search" placeholder="Buscar proveedor..." oninput="filterTable('tb-proveedores',this.value)">
+      </div>
+      <div id="form-prov" class="form-card">
+        <div class="form-title">Nuevo proveedor</div>
+        <div class="fgrid">
+          <div class="field"><label>Nombre / empresa *</label><input id="fp-nom" placeholder="Nombre o razón social"/></div>
+          <div class="field"><label>Contacto</label><input id="fp-cont" placeholder="Nombre del contacto"/></div>
+          <div class="field"><label>Teléfono</label><input id="fp-tel" placeholder="9XXXXXXXX"/></div>
+          <div class="field"><label>Ubicación</label><input id="fp-ubic" placeholder="Ej: Gamarra, Lima"/></div>
+          <div class="field"><label>Tipo</label><select id="fp-tipo"><option>Importador</option><option>Mayorista</option><option>Fabricante</option><option>Otro</option></select></div>
+          <div class="field"><label>Calidad (1-5)</label><select id="fp-cal"><option value="5">5 — Excelente</option><option value="4">4 — Bueno</option><option value="3" selected>3 — Regular</option><option value="2">2 — Bajo</option><option value="1">1 — Malo</option></select></div>
+          <div class="field"><label>Observaciones</label><input id="fp-obs" placeholder="Condiciones, notas importantes..."/></div>
+        </div>
+        <div class="form-footer">
+          <button class="btn" onclick="toggleForm('form-prov')">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveProveedor()">Guardar proveedor</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th style="width:20%">Nombre</th><th style="width:15%">Contacto</th>
+            <th style="width:13%">Teléfono</th><th style="width:15%">Ubicación</th>
+            <th style="width:11%">Tipo</th><th style="width:12%">Calidad</th>
+            <th style="width:14%">Observaciones</th>
+          </tr></thead>
+          <tbody id="tb-proveedores"></tbody>
+        </table>
+      </div>
+      <div id="empty-proveedores" class="empty"><div class="empty-icon">🏭</div><p>Sin proveedores registrados. Agrega tus importadores y mayoristas.</p><button class="btn btn-primary" onclick="toggleForm('form-prov')">+ Agregar proveedor</button></div>
+    </section>
+
+  </main>
+</div>
+
+    <script>
+        function showSection(section) {
+            ['inventario', 'nuevo-producto', 'ventas'].forEach(s => {
+                document.getElementById(`section-${s}`).style.display = s === section ? 'block' : 'none';
+            });
+        }
+
+        // Cargar Inventario desde el Backend
+        async function loadInventory() {
+            const res = await fetch('/api/products');
+            const products = await res.json();
+            const table = document.getElementById('inventory-table');
+            table.innerHTML = '';
+            products.forEach(p => {
+                const statusClass = p.stock_current <= p.stock_min ? 'text-danger fw-bold' : 'text-success';
+                table.innerHTML += `
+                    <tr>
+                        <td>${p.id}</td>
+                        <td>${p.name} <small class="text-muted">(${p.color || ''})</small></td>
+                        <td>${p.stock_current}</td>
+                        <td>S/ ${p.price_retail}</td>
+                        <td>S/ ${p.price_wholesale || '-'}</td>
+                        <td class="${statusClass}">${p.stock_current <= p.stock_min ? '⚠️ Reponer' : '✅ OK'}</td>
+                        <td><button class="btn btn-sm btn-outline-danger" onclick="deleteProduct('${p.id}')">🗑️</button></td>
+                    </tr>`;
+            });
+        }
+
+        // Registrar la venta
+        document.getElementById('product-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const data = {
+                id: document.getElementById('p-id').value,
+                name: document.getElementById('p-name').value,
+                color: document.getElementById('p-color').value,
+                cost_unit: parseFloat(document.getElementById('p-cost').value),
+                price_retail: parseFloat(document.getElementById('p-retail').value),
+                price_wholesale: parseFloat(document.getElementById('p-wholesale').value),
+                stock_current: parseInt(document.getElementById('p-stock').value),
+                stock_min: 1
+            };
+            const res = await fetch('/api/products', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            if (res.ok) {
+                alert("Producto Guardado");
+                document.getElementById('product-form').reset();
+                showSection('inventario');
+                loadInventory();
+            }
+        };
+
+        function filterTable() {
+            let filter = document.getElementById('searchBar').value.toUpperCase();
+            let rows = document.getElementById('inventory-table').getElementsByTagName('tr');
+            for (let i = 0; i < rows.length; i++) {
+                let txtValue = rows[i].textContent || rows[i].innerText;
+                rows[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? "" : "none";
+            }
+        }
+
+        window.onload = loadInventory;
+    </script>
+</body>
+</html>

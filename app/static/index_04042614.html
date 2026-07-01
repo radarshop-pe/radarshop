@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radarshop — Panel de gestión</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* [Tus estilos base se mantienen, añadiendo mejoras responsive] */
+        :root{--orange:#FE7301;--orange-dark:#d46000;--orange-light:#fff0e6;--orange-text:#7a3500;--green:#1D9E75;--green-dark:#0F6E56;--green-light:#E1F5EE;--green-text:#085041;--amber:#EF9F27;--amber-light:#FAEEDA;--amber-text:#854F0B;--red:#E24B4A;--red-light:#FCEBEB;--red-text:#A32D2D;--blue-light:#E6F1FB;--blue-text:#185FA5;--bg:#F5F3EF;--surface:#FFFFFF;--border:rgba(0,0,0,0.07);--border-md:rgba(0,0,0,0.12);--text:#1A1A18;--text-2:#6B6A66;--text-3:#A8A7A3;--r:10px;--r-lg:14px}
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);font-size:14px;display:flex;height:100vh;overflow:hidden}
+        
+        /* Ajustes para Móvil */
+        @media (max-width: 768px) {
+            body { flex-direction: column; overflow-y: auto; height: auto; }
+            .sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+            .main { padding: 16px; }
+            .kpis { grid-template-columns: 1fr 1fr; }
+            .fgrid, .fgrid-2 { grid-template-columns: 1fr; }
+            .sale-row { grid-template-columns: 1fr 60px 80px 30px; gap: 4px; }
+        }
+
+        /* Estilos del Escáner */
+        #reader { width: 100%; max-width: 400px; margin: 10px auto; border-radius: var(--r); overflow: hidden; display: none; }
+        .scan-btn { background: var(--bg); border: 1px solid var(--border-md); padding: 5px; border-radius: 5px; cursor: pointer; }
+
+        /* [Copiando el resto de tus estilos del archivo original...] */
+        .sidebar{width:230px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;flex-shrink:0}
+        .sb-head{padding:20px 16px 14px;border-bottom:1px solid var(--border)}
+        .brand{display:flex;align-items:center;gap:10px}
+        .brand-icon{width:34px;height:34px;background:var(--orange);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+        .brand-icon svg{width:19px;height:19px}
+        .brand-name{font-size:15px;font-weight:600}
+        .sb-nav{flex:1;padding:12px 10px;overflow-y:auto}
+        .nav-section{font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;padding:0 6px;margin:14px 0 4px}
+        .ni{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;color:var(--text-2);cursor:pointer;transition:all .14s;font-size:13.5px;border:none;background:none;width:100%;text-align:left}
+        .ni.on{background:var(--orange-light);color:var(--orange-text);font-weight:500}
+        .main{flex:1;overflow-y:auto;padding:32px 36px}
+        .section{display:none} .section.on{display:block}
+        .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:1.75rem}
+        .kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px 18px}
+        .tw{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow-x:auto}
+        table{width:100%;border-collapse:collapse;font-size:13px}
+        th{background:var(--bg);padding:10px 13px;text-align:left;font-size:11px;color:var(--text-2)}
+        td{padding:11px 13px;border-bottom:1px solid var(--border)}
+        .fcard{background:var(--surface);border:1px solid var(--border-md);border-radius:var(--r-lg);padding:20px;margin-bottom:18px;display:none}
+        .fcard.on{display:block}
+        .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:none;align-items:center;justify-content:center}
+        .modal-bg.on{display:flex}
+        .modal{background:var(--surface);border-radius:var(--r-lg);padding:24px;width:min(96vw,500px)}
+    </style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sb-head">
+    <div class="brand">
+      <div class="brand-icon"><svg viewBox="0 0 19 19" fill="none"><circle cx="9.5" cy="9.5" r="7.5" stroke="white" stroke-width="1.5"/><circle cx="9.5" cy="9.5" r="3.8" stroke="white" stroke-width="1.5"/><circle cx="9.5" cy="9.5" r="1.4" fill="white"/></svg></div>
+      <div><div class="brand-name">Radarshop</div><div class="brand-sub">A un click de tu compra</div></div>
+    </div>
+  </div>
+  <nav class="sb-nav">
+    <div class="nav-section">Principal</div>
+    <button class="ni on" onclick="go('dashboard',this)">Dashboard</button>
+    <button class="ni" onclick="go('inventario',this)">Inventario</button>
+    <button class="ni" onclick="go('ventas',this)">Ventas</button>
+    <div class="nav-section">Gestión</div>
+    <button class="ni" onclick="go('clientes',this)">Clientes</button>
+    <button class="ni" onclick="go('proveedores',this)">Proveedores</button>
+    <div class="nav-section">Configuración</div>
+    <button class="ni" onclick="go('categorias',this)">Categorías</button>
+    <button class="ni" onclick="go('vendedores',this)">Vendedores</button>
+  </nav>
+</aside>
+
+<main class="main">
+  <section id="sec-inventario" class="section">
+    <div class="page-hd"><div class="page-title">Inventario</div></div>
+    <div class="toolbar">
+      <button class="btn btn-p" onclick="openF('finv')">+ Agregar producto</button>
+      <button class="btn" onclick="startScanner('fi-id')">📷 Escanear SKU</button>
+    </div>
+    <div id="reader"></div> <div id="finv" class="fcard">
+      <div class="ftitle" id="finv-title">Nuevo producto</div>
+      <div class="fgrid">
+        <div class="field"><label>SKU / Código *</label><input id="fi-id" placeholder="Escanea o escribe..."/></div>
+        <div class="field"><label>Nombre *</label><input id="fi-name" placeholder="Ej: Organizador"/></div>
+        <div class="field"><label>Precio Venta (S/)</label><input id="fi-retail" type="number" step="0.01"/></div>
+        <div class="field"><label>Stock</label><input id="fi-stock" type="number"/></div>
+      </div>
+      <div class="ffoot">
+        <button class="btn btn-ghost" onclick="closeF('finv')">Cancelar</button>
+        <button class="btn btn-p" onclick="saveProduct()">Guardar</button>
+      </div>
+    </div>
+    <div class="tw"><table><thead><tr><th>Producto</th><th>P.Venta</th><th>Stock</th><th>Acciones</th></tr></thead><tbody id="tb-inv"></tbody></table></div>
+  </section>
+
+  <section id="sec-ventas" class="section">
+    <div class="page-hd"><div class="page-title">Ventas</div></div>
+    <div class="toolbar"><button class="btn btn-p" onclick="openF('fventa')">+ Registrar venta</button></div>
+    <div id="fventa" class="fcard">
+      <div class="fgrid">
+        <div class="field"><label>Cliente</label><input id="fv-cli-search" placeholder="Buscar cliente..."/></div>
+        <div class="field">
+    <label>Vendedor *</label><input id="fv-seller-name" placeholder="Nombre del vendedor" list="vendedores-list"><datalist id="vendedores-list"></datalist></div>
+      <div class="field"><label>Canal</label><select id="fv-channel"><option>WhatsApp</option><option>TikTok</option><option>Facebook</option></select></div>
+      </div>
+      <d
+      iv id="sale-items" style="margin-top:15px"></div>
+      <button class="add-line" onclick="addSaleItem()">+ Agregar producto</button>
+      <div class="ffoot"><button class="btn btn-p" onclick="saveSale()">Finalizar Venta</button></div>
+    </div>
+    <div class="tw"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>Vendedor</th><th>Total</th><th>Acciones</th></tr></thead><tbody id="tb-ventas"></tbody></table></div>
+  </section>
+
+  <section id="sec-vendedores" class="section">
+    <div class="page-hd"><div class="page-title">Vendedores</div><div class="page-sub">Equipo de ventas de Radarshop</div></div>
+    <div class="toolbar"><button class="btn btn-p" onclick="openModal('modal-seller')">+ Nuevo Vendedor</button></div>
+    <div class="tw"><table><thead><tr><th>Nombre</th><th>Teléfono</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="tb-sellers"></tbody></table></div>
+  </section>
+</main>
+
+<div class="modal-bg" id="modal-seller"><div class="modal">
+  <div class="modal-head"><div class="modal-title">Registrar Vendedor</div><button class="modal-close" onclick="closeModal('modal-seller')">×</button></div>
+  <input type="hidden" id="ms-id">
+  <div class="fgrid">
+    <div class="field"><label>Nombre Completo *</label><input id="ms-name" placeholder="Ej: Juan Pérez"/></div>
+    <div class="field"><label>Teléfono</label><input id="ms-phone" placeholder="9XXXXXXXX"/></div>
+    <div class="field"><label>Estado</label><select id="ms-status"><option>Activo</option><option>Inactivo</option></select></div>
+  </div>
+  <div class="ffoot"><button class="btn btn-p" onclick="saveSeller()">Guardar Vendedor</button></div>
+</div></div>
+
+<script>
+// LÓGICA DEL ESCÁNER
+let html5QrCode;
+function startScanner(targetInputId) {
+    const reader = document.getElementById('reader');
+    reader.style.display = 'block';
+    html5QrCode = new Html5Qrcode("reader");
+    html5QrCode.start(
+        { facingMode: "environment" }, 
+        { fps: 10, qrbox: { width: 250, height: 150 } },
+        (decodedText) => {
+            document.getElementById(targetInputId).value = decodedText;
+            toast("Código detectado: " + decodedText);
+            stopScanner();
+        }
+    ).catch(err => toast("Error de cámara: " + err, 'er'));
+}
+function stopScanner() {
+    if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+            document.getElementById('reader').style.display = 'none';
+        });
+    }
+}
+
+// LÓGICA DE VENDEDORES
+async function loadSellers() {
+    try {
+        const res = await fetch('/api/sellers');
+        const data = await res.json();
+        const tb = document.getElementById('tb-sellers');
+        const selVenta = document.getElementById('fv-seller');
+        
+        tb.innerHTML = data.map(s => `
+            <tr>
+                <td>${s.name}</td>
+                <td>${s.phone || '-'}</td>
+                <td><span class="badge ${s.status==='Activo'?'bg':'bgr'}">${s.status}</span></td>
+                <td><button class="btn btn-sm" onclick='editSeller(${JSON.stringify(s)})'>Editar</button></td>
+            </tr>`).join('');
+        
+        // Llenar el select en ventas
+        selVenta.innerHTML = '<option value="">Seleccionar vendedor...</option>' + 
+            data.filter(s => s.status === 'Activo').map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+    } catch(e) { console.log("Error cargando vendedores", e); }
+}
+
+async function saveSeller() {
+    const id = document.getElementById('ms-id').value;
+    const body = {
+        name: document.getElementById('ms-name').value,
+        phone: document.getElementById('ms-phone').value,
+        status: document.getElementById('ms-status').value
+    };
+    const method = id ? 'PUT' : 'POST';
+    const url = id ? `/api/sellers/${id}` : '/api/sellers';
+
+    const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+
+    if (res.ok) {
+        toast("Vendedor guardado");
+        closeModal('modal-seller');
+        loadSellers();
+    }
+} 
+async function saveSale() {
+    // Capturamos el nombre del vendedor del input
+    const v_name = document.getElementById('fv-seller-name').value;
+    const c_name = document.getElementById('fv-cli-search').value;
+
+    if (!v_name) {
+        toast('El nombre del vendedor es obligatorio', 'er');
+        return;
+    }
+
+    const items = [];
+    document.querySelectorAll('.sale-item-row').forEach(row => {
+        const p_id = row.querySelector('.item-select').value;
+        const qty = parseInt(row.querySelector('.item-qty').value);
+        const price = parseFloat(row.querySelector('.item-price').value);
+        if (p_id && qty > 0) items.push({ product_id: p_id, quantity: qty, price: price });
+    });
+
+    if (items.length === 0) {
+        toast('Agrega al menos un producto', 'er');
+        return;
+    }
+
+    const body = {
+        client_name: c_name || 'Cliente General',
+        seller_name: v_name, // Esto creará el vendedor en el backend si no existe
+        channel: document.getElementById('fv-channel').value,
+        payment_method: document.getElementById('fv-payment').value,
+        delivery_type: document.getElementById('fv-delivery').value,
+        delivery_fee: parseFloat(document.getElementById('fv-dev-fee').value || 0),
+        items: items
+    };
+
+    try {
+        await api('POST', '/api/sales', body);
+        toast('Venta registrada');
+        closeF('fventa');
+        loadInventory();
+        loadDashboard(); // Si tienes dashboard para ver ventas
+    } catch (e) {
+        toast(e.message, 'er');
+    }
+}
+
+// [Funciones de navegación y generales existentes]
+function go(name,el){
+    document.querySelectorAll('.section').forEach(s=>s.classList.remove('on'));
+    document.querySelectorAll('.ni').forEach(n=>n.classList.remove('on'));
+    document.getElementById('sec-'+name).classList.add('on');
+    el.classList.add('on');
+    if(name === 'vendedores') loadSellers();
+}
+function openF(id){document.getElementById(id).classList.add('on')}
+function closeF(id){document.getElementById(id).classList.remove('on')}
+function openModal(id){document.getElementById(id).classList.add('on')}
+function closeModal(id){document.getElementById(id).classList.remove('on')}
+function toast(m,t='ok'){alert(m);} // Puedes mejorar esto con tu toast original
+
+// Inicialización
+loadSellers();
+</script>
+</body>
+</html>
