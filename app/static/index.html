@@ -209,6 +209,23 @@ tr:hover td{background:rgba(254,115,1,.02)}
 .mobile-title{font-weight:600;font-size:15px;color:var(--orange)}
 #reader-container{position:relative;display:none;margin-bottom:20px}
 .btn-close-scan{position:absolute;top:10px;right:10px;z-index:10;background:var(--red);color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer}
+/* ── LOGIN ── */
+.login-screen{position:fixed;inset:0;background:var(--bg);z-index:2000;display:flex;align-items:center;justify-content:center}
+.login-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:36px 32px;width:min(92vw,380px);text-align:center}
+.login-logo{width:48px;height:48px;background:var(--orange);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+.login-logo svg{width:26px;height:26px}
+.login-title{font-size:20px;font-weight:600;margin-bottom:4px}
+.login-sub{font-size:13px;color:var(--text-2);margin-bottom:28px}
+.login-field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;text-align:left}
+.login-field label{font-size:12px;font-weight:500;color:var(--text-2)}
+.login-field input{padding:10px 12px;font-size:14px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-md);border-radius:var(--r);background:var(--bg);color:var(--text);outline:none;transition:border-color .15s}
+.login-field input:focus{border-color:var(--orange);background:var(--surface)}
+.login-btn{width:100%;padding:11px;background:var(--orange);color:#fff;border:none;border-radius:var(--r);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:background .15s;margin-top:4px}
+.login-btn:hover{background:var(--orange-dark)}
+.login-error{font-size:13px;color:var(--red-text);background:var(--red-light);border-radius:var(--r);padding:8px 12px;margin-top:12px;display:none}
+.user-chip{font-size:11px;color:var(--text-3);padding:0 10px;display:flex;align-items:center;gap:6px}
+.logout-btn{background:none;border:none;font-size:12px;color:var(--text-3);cursor:pointer;padding:2px 6px;border-radius:4px}
+.logout-btn:hover{color:var(--red-text);background:var(--red-light)}
 </style>
 </head>
 <body>
@@ -217,6 +234,28 @@ tr:hover td{background:rgba(254,115,1,.02)}
   <span class="mobile-title">Radarshop</span>
 </div>
 <div class="sidebar-overlay" onclick="toggleMenu()"></div>
+<!-- ══ LOGIN SCREEN ══ -->
+<div class="login-screen" id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <svg viewBox="0 0 19 19" fill="none"><circle cx="9.5" cy="9.5" r="7.5" stroke="white" stroke-width="1.5"/><circle cx="9.5" cy="9.5" r="3.8" stroke="white" stroke-width="1.5"/><circle cx="9.5" cy="9.5" r="1.4" fill="white"/></svg>
+    </div>
+    <div class="login-title">Radarshop</div>
+    <div class="login-sub">Panel de gestión — acceso privado</div>
+    <div class="login-field">
+      <label>Correo electrónico</label>
+      <input id="login-email" type="email" placeholder="tu@correo.com" autocomplete="email"
+             onkeydown="if(event.key==='Enter') doLogin()"/>
+    </div>
+    <div class="login-field">
+      <label>Contraseña</label>
+      <input id="login-password" type="password" placeholder="••••••••"
+             onkeydown="if(event.key==='Enter') doLogin()"/>
+    </div>
+    <button class="login-btn" onclick="doLogin()">Ingresar</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
 <!-- ══ SIDEBAR ══ -->
 <aside class="sidebar" id="sidebar">
   <div class="sb-head">
@@ -267,9 +306,13 @@ tr:hover td{background:rgba(254,115,1,.02)}
     </button>
   </nav>
   <div class="sb-foot">
-    <button class="exp-btn" onclick="exportExcel()">
-      <svg viewBox="0 0 16 16" fill="none" style="width:18px;height:18px"><path d="M8 2v9M4 8l4 4 4-4M2 13h12" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      Exportar a Excel
+    <div class="user-chip" id="user-chip">
+      <span id="user-label" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+      <button class="logout-btn" onclick="doLogout()" title="Cerrar sesión">Salir</button>
+    </div>
+    <button class="exp-btn" onclick="exportExcel()" style="margin-top:8px">
+      <svg viewBox="0 0 16 16" fill="none" style="width:13px;height:13px"><path d="M8 2v9M4 8l4 4 4-4M2 13h12" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Exportar Excel
     </button>
   </div>
 </aside>
@@ -665,12 +708,50 @@ function toast(msg, type='ok') {
   setTimeout(() => t.classList.remove('show'), 3200);
 }
 async function api(method, path, body) {
-  const opts = { method, headers: {'Content-Type':'application/json'} };
+  const opts = { method, headers: {'Content-Type':'application/json'}, credentials: 'include' };
   if (body) opts.body = JSON.stringify(body);
   const r = await fetch(path, opts);
+  if (r.status === 401) { showLogin(); throw new Error('Sesión expirada. Vuelve a iniciar sesión.'); }
   const json = await r.json();
   if (!r.ok || !json.ok) throw new Error(json.message || 'Error del servidor');
   return json.data;
+}
+
+// ── AUTH ────────────────────────────────────────────────
+function showLogin() {
+  document.getElementById('login-screen').style.display = 'flex';
+}
+function hideLogin() {
+  document.getElementById('login-screen').style.display = 'none';
+}
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pwd   = document.getElementById('login-password').value.trim();
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+  if (!email || !pwd) { errEl.textContent = 'Completa todos los campos'; errEl.style.display = 'block'; return; }
+  try {
+    const r    = await fetch('/login', { method:'POST', headers:{'Content-Type':'application/json'},
+                             credentials:'include', body: JSON.stringify({email, password: pwd}) });
+    const json = await r.json();
+    if (json.ok) {
+      document.getElementById('user-label').textContent = json.user;
+      hideLogin();
+      init();
+    } else {
+      errEl.textContent = json.message || 'Credenciales incorrectas';
+      errEl.style.display = 'block';
+    }
+  } catch(e) {
+    errEl.textContent = 'Error de conexión';
+    errEl.style.display = 'block';
+  }
+}
+async function doLogout() {
+  await fetch('/logout', { method:'POST', credentials:'include' });
+  document.getElementById('login-email').value = '';
+  document.getElementById('login-password').value = '';
+  showLogin();
 }
 function fmt(n) { return 'S/ ' + parseFloat(n||0).toFixed(2); }
 function gv(id) { return document.getElementById(id).value.trim(); }
@@ -1375,12 +1456,18 @@ function exportExcel() { window.location.href = '/api/export/excel'; toast('Desc
 
 // ── INIT ──────────────────────────────────────────────────
 async function init() {
-  // Cargar datos maestros primero para que los formularios tengan opciones
+  // Verificar sesión activa
+  try {
+    const r    = await fetch('/api/me', { credentials: 'include' });
+    const json = await r.json();
+    if (!json.ok) { showLogin(); return; }
+    document.getElementById('user-label').textContent = json.user;
+    hideLogin();
+  } catch(e) { showLogin(); return; }
+
+  addSaleItem();
   await loadCategories();
   await loadInventory();
-  await loadSellers();
-  // Ahora crear la línea inicial de venta (con productos ya cargados)
-  addSaleItem();
   await loadSales();
   await loadClients();
   await loadInquiries();

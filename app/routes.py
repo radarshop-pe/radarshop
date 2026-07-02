@@ -1,12 +1,21 @@
-from flask import Blueprint, jsonify, request, send_file
+from flask import Blueprint, jsonify, request, send_file, session
 from models import db, Product, Provider, Client, Sale, SaleDetail, Category, Inquiry, Seller
 from datetime import datetime
 from io import BytesIO
 import openpyxl
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.styles import Font, PatternFill, Alignment
 from sqlalchemy import func
 
 inventory_bp = Blueprint('inventory', __name__)
+
+# ── AUTH MIDDLEWARE ───────────────────────────────────────
+@inventory_bp.before_request
+def check_auth():
+    """Protege todas las rutas /api/* — requiere sesión activa."""
+    if request.method == 'OPTIONS':
+        return  # permitir preflight CORS
+    if 'user' not in session:
+        return jsonify({'ok': False, 'message': 'No autorizado. Inicia sesión.'}), 401
 
 # ── HELPERS ───────────────────────────────────────────────
 def ok(data=None, msg='OK', code=200):
@@ -18,8 +27,8 @@ def err(msg='Error', code=400):
 def style_sheet(ws, headers, rows, widths):
     ws.append(headers)
     for cell in ws[1]:
-        cell.font = Font(name='Calibri', bold=True, color='FFFFFF', size=11)
-        cell.fill = PatternFill('solid', fgColor='FE7301')
+        cell.font  = Font(name='Calibri', bold=True, color='FFFFFF', size=11)
+        cell.fill  = PatternFill('solid', fgColor='FE7301')
         cell.alignment = Alignment(horizontal='center', vertical='center')
     ws.row_dimensions[1].height = 20
     for row in rows:
