@@ -3,6 +3,9 @@ from flask_cors import CORS
 from models import db
 from routes import inventory_bp
 import os
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 
 app = Flask(__name__, static_folder='static')
 CORS(app, supports_credentials=True)
@@ -40,14 +43,20 @@ with app.app_context():
 
 # ── AUTH HELPERS ──────────────────────────────────────────
 def get_users():
-    """Lee usuarios desde variables de entorno de Vercel."""
+    """Lee usuarios desde variables de entorno de Vercel o usa credenciales de desarrollo local."""
     users = {}
     for i in range(1, 6):
         email = os.environ.get(f'USER_{i}_EMAIL', '').strip().lower()
         pwd   = os.environ.get(f'USER_{i}_PASSWORD', '').strip()
         if email and pwd:
             users[email] = pwd
+    
+    # Si no hay variables de entorno (estás en local), habilitar usuario de prueba
+    if not users:
+        users['admin@radarshop.pe'] = 'admin123'
+        
     return users
+
 
 # ── RUTAS DE AUTENTICACIÓN ────────────────────────────────
 @app.route('/login', methods=['POST'])
