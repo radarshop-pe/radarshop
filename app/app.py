@@ -29,14 +29,28 @@ app.register_blueprint(inventory_bp)
 
 # ── INICIALIZAR BD ────────────────────────────────────────
 with app.app_context():
-    db.create_all()
-    from models import Category
-    defaults = ['Hogar', 'Cocina', 'Oficina', 'Accesorios mujer',
-                'Electronica', 'Limpieza', 'Belleza', 'Otros']
-    for name in defaults:
-        if not Category.query.filter_by(name=name).first():
-            db.session.add(Category(name=name))
     try:
+        db.create_all()
+        # Migraciones automáticas para nuevas columnas (Supabase / SQLite)
+        migrations = [
+            "ALTER TABLE product ADD COLUMN IF NOT EXISTS commission FLOAT DEFAULT 0.0;",
+            "ALTER TABLE sale_detail ADD COLUMN IF NOT EXISTS commission_at_sale FLOAT DEFAULT 0.0;",
+            "ALTER TABLE sale ADD COLUMN IF NOT EXISTS commission_total FLOAT DEFAULT 0.0;",
+            "ALTER TABLE seller ADD COLUMN IF NOT EXISTS commission FLOAT DEFAULT 0.0;"
+        ]
+        for sql in migrations:
+            try:
+                db.session.execute(db.text(sql))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
+        from models import Category
+        defaults = ['Hogar', 'Cocina', 'Oficina', 'Accesorios mujer',
+                    'Electronica', 'Limpieza', 'Belleza', 'Otros']
+        for name in defaults:
+            if not Category.query.filter_by(name=name).first():
+                db.session.add(Category(name=name))
         db.session.commit()
     except Exception:
         db.session.rollback()
