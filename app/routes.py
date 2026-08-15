@@ -165,6 +165,7 @@ def create_seller():
         name=d['name'].strip(),
         phone=d.get('phone', ''),
         status=d.get('status', 'Activo'),
+        commission=float(d.get('commission', 0)),
         notes=d.get('notes', '')
     )
     db.session.add(seller)
@@ -181,6 +182,7 @@ def update_seller(sid):
     s.phone = d.get('phone', s.phone)
     s.status = d.get('status', s.status)
     s.notes = d.get('notes', s.notes)
+    s.commission = float(d.get('commission', s.commission or 0))
     db.session.commit()
     return ok(s.to_dict())
 
@@ -223,6 +225,7 @@ def add_product():
         stock_min=int(d.get('stock_min', 1)),
         location=d.get('location', ''),
         provider_id=d.get('provider_id') or None,
+        commission=float(d.get('commission') or 0),
         status='Activo',
         notes=d.get('notes', '')
     )
@@ -246,6 +249,7 @@ def update_product(pid):
     p.stock_min = int(d.get('stock_min', p.stock_min))
     p.location = d.get('location', p.location)
     p.provider_id = d.get('provider_id') or p.provider_id
+    p.commission = float(d.get('commission') or 0 if d.get('commission') is not None else p.commission or 0)
     p.status = d.get('status', p.status)
     p.notes = d.get('notes', p.notes)
     db.session.commit()
@@ -446,20 +450,37 @@ def create_sale():
                 db.session.rollback()
                 return err(f"Stock insuficiente para '{prod.name}'. Disponible: {prod.stock_current}")
 
-        # Registrar detalles y descontar stock
+        # Registrar detalles, descontar stock y calcular comisiones por producto
+        total_comm = 0.0
         for item in items:
             prod = Product.query.get(item['product_id'])
             qty = int(item.get('quantity', 1))
             price = float(item.get('price', prod.price_retail))
+            # Prioridad 1: Comisión configurada en el item; Prioridad 2: Comisión del producto; Prioridad 3: Comisión del vendedor
+            if item.get('commission') is not None and item.get('commission') != '':
+                comm_unit = float(item.get('commission'))
+            elif prod.commission and prod.commission > 0:
+                comm_unit = float(prod.commission)
+            else:
+                comm_unit = float(seller.commission or 0)
+
             detail = SaleDetail(
                 sale_id=new_sale.id,
                 product_id=prod.id,
                 quantity=qty,
                 price_at_sale=price,
-                cost_at_sale=prod.cost_unit
+                cost_at_sale=prod.cost_unit,
+                commission_at_sale=comm_unit
             )
             prod.stock_current -= qty
             db.session.add(detail)
+            total_comm += comm_unit * qty
+
+        # Si se envió commission_total explícito en la venta, usarlo; de lo contrario, usar la suma de comisiones calculadas
+        if data.get('commission_total') is not None and str(data.get('commission_total')).strip() != '':
+            new_sale.commission_total = round(float(data['commission_total']), 2)
+        else:
+            new_sale.commission_total = round(total_comm, 2)
 
         db.session.commit()
         return ok({'id': new_sale.id}, 'Venta registrada', 201)
@@ -582,14 +603,15 @@ def export_excel():
                 round(d.quantity * d.price_at_sale, 2),
                 s.channel, s.payment_method,
                 s.delivery_type, s.delivery_cost,
+                s.commission_total or 0,
                 s.total_income, s.total_profit, s.status
             ))
     style_sheet(ws2,
         ['ID Venta', 'Fecha', 'Cliente', 'Vendedor', 'Producto', 'Cantidad',
          'Precio Unit.', 'Subtotal', 'Canal', 'Pago', 'Entrega',
-         'Delivery', 'Total Ingreso', 'Ganancia', 'Estado'],
+         'Delivery', 'Comisión Vendedor', 'Total Ingreso', 'Ganancia Neta', 'Estado'],
         rows_v,
-        [12, 11, 18, 18, 22, 8, 11, 11, 16, 12, 12, 9, 13, 11, 11]
+        [12, 11, 18, 18, 22, 8, 11, 11, 16, 12, 12, 9, 14, 13, 13, 11]
     )
 
     # Clientes
@@ -633,10 +655,10 @@ def export_excel():
     ws6 = wb.create_sheet('Vendedores')
     sellers = Seller.query.order_by(Seller.name).all()
     style_sheet(ws6,
-        ['ID', 'Nombre', 'Teléfono', 'Estado', 'Total Ventas', 'Notas'],
-        [(s.id, s.name, s.phone or '', s.status, len(s.sales), s.notes or '')
+        ['ID', 'Nombre', 'Teléfono', 'Estado', 'Comisión (S/ unidad)', 'Total Ventas', 'Notas'],
+        [(s.id, s.name, s.phone or '', s.status, s.commission or 0, len(s.sales), s.notes or '')
          for s in sellers],
-        [8, 24, 14, 10, 12, 28]
+        [8, 24, 14, 10, 16, 12, 28]
     )
 
     # Categorías

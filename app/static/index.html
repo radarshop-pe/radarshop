@@ -1497,6 +1497,8 @@
               step="0.01" oninput="calcMargin()" /></div>
           <div class="field"><label>Precio mayorista (S/)</label><input id="fi-wholesale" type="number"
               placeholder="0.00" step="0.01" /></div>
+          <div class="field"><label>Comisión vendedor (S/)</label><input id="fi-commission" type="number"
+              placeholder="0.00" step="0.01" min="0" /></div>
           <div class="field"><label>Stock actual</label><input id="fi-stock" type="number" placeholder="0" /></div>
           <div class="field"><label>Stock mínimo</label><input id="fi-smin" type="number" placeholder="1" /></div>
           <div class="field"><label>Ubicación</label><input id="fi-loc" placeholder="Ej: Estante A2" /></div>
@@ -1650,13 +1652,14 @@
           <thead>
             <tr>
               <th style="width:10%">Fecha</th>
-              <th style="width:10%">ID</th>
-              <th style="width:15%">Cliente</th>
-              <th style="width:13%">Vendedor</th>
-              <th style="width:18%">Productos</th>
-              <th style="width:9%">Ingreso</th>
+              <th style="width:8%">ID</th>
+              <th style="width:14%">Cliente</th>
+              <th style="width:12%">Vendedor</th>
+              <th style="width:17%">Productos</th>
+              <th style="width:8%">Ingreso</th>
               <th style="width:9%">Ganancia</th>
-              <th style="width:10%">Canal</th>
+              <th style="width:8%">Comisión</th>
+              <th style="width:8%">Canal</th>
               <th style="width:6%">Acc.</th>
             </tr>
           </thead>
@@ -1845,9 +1848,10 @@
           <thead>
             <tr>
               <th style="width:8%">ID</th>
-              <th style="width:28%">Nombre</th>
-              <th style="width:16%">Teléfono</th>
+              <th style="width:22%">Nombre</th>
+              <th style="width:14%">Teléfono</th>
               <th style="width:10%">Estado</th>
+              <th style="width:18%">Comisión</th>
               <th style="width:14%">Ventas</th>
               <th style="width:14%">Acciones</th>
             </tr>
@@ -2056,6 +2060,8 @@
       <div class="fgrid">
         <div class="field"><label>Nombre completo *</label><input id="ms-name" placeholder="Ej: Juan Pérez" /></div>
         <div class="field"><label>Teléfono</label><input id="ms-phone" placeholder="9XXXXXXXX" /></div>
+        <div class="field"><label>Comisión por unidad vendida (S/)</label><input id="ms-commission" type="number"
+            placeholder="0.00" step="0.01" min="0" /></div>
         <div class="field"><label>Estado</label><select id="ms-status">
             <option>Activo</option>
             <option>Inactivo</option>
@@ -2409,6 +2415,7 @@
       <td class="cn">${s.name}</td>
       <td>${s.phone || '—'}</td>
       <td><span class="badge ${s.status === 'Activo' ? 'bg' : 'bgr'}">${s.status}</span></td>
+      <td>S/ ${(s.commission || 0).toFixed(2)} x unidad</td>
       <td>${s.total_sales || 0} ventas</td>
       <td>
         <button class="btn btn-sm btn-edit" onclick='editSeller(${JSON.stringify(s)})'>Editar</button>
@@ -2441,7 +2448,7 @@
     }
     async function saveSeller() {
       const id = gv('ms-id');
-      const body = { name: gv('ms-name'), phone: gv('ms-phone'), status: gv('ms-status'), notes: gv('ms-notes') };
+      const body = { name: gv('ms-name'), phone: gv('ms-phone'), status: gv('ms-status'), notes: gv('ms-notes'), commission: gn('ms-commission') };
       if (!body.name) { toast('El nombre es requerido', 'er'); return; }
       try {
         id ? await api('PUT', `/api/sellers/${id}`, body) : await api('POST', '/api/sellers', body);
@@ -2453,6 +2460,7 @@
     function editSeller(s) {
       sv('ms-id', s.id); sv('ms-name', s.name); sv('ms-phone', s.phone || '');
       sv('ms-notes', s.notes || '');
+      sv('ms-commission', s.commission || 0);
       document.getElementById('ms-status').value = s.status || 'Activo';
       document.getElementById('modal-seller-title').textContent = 'Editar vendedor';
       openModal('modal-seller');
@@ -2525,6 +2533,7 @@
             <div style="grid-column: span 2"><label style="font-size:11px; color:var(--text-2)">Nombre</label><div style="font-weight:600">${p.name}</div></div>
             <div><label style="font-size:11px; color:var(--text-2)">Precio Venta</label><div style="color:var(--green-text); font-weight:600">${fmt(p.price_retail)}</div></div>
             <div><label style="font-size:11px; color:var(--text-2)">Precio Mayorista</label><div style="color:var(--blue-text); font-weight:600">${fmt(p.price_wholesale)}</div></div>
+            <div><label style="font-size:11px; color:var(--text-2)">Comisión vendedor</label><div style="color:var(--orange); font-weight:600">${fmt(p.commission || 0)}</div></div>
             <div><label style="font-size:11px; color:var(--text-2)">Stock</label><div>${p.stock_current} unidades</div></div>
             <div><label style="font-size:11px; color:var(--text-2)">Proveedor</label><div>${p.provider || '—'}</div></div>
             <div><label style="font-size:11px; color:var(--text-2)">Ubicación</label><div>${p.location || '—'}</div></div>
@@ -2541,6 +2550,7 @@
         provider_id: document.getElementById('fi-prov').value || null,
         cost_unit: gn('fi-cost'), price_retail: gn('fi-retail'),
         price_wholesale: gn('fi-wholesale'),
+        commission: gn('fi-commission'),
         stock_current: gi('fi-stock'), stock_min: gi('fi-smin') || 1,
         location: gv('fi-loc'), notes: gv('fi-notes'),
         status: gv('fi-status')
@@ -2556,6 +2566,7 @@
       sv('fi-id', p.id); sv('fi-name', p.name); sv('fi-color', p.color || '');
       sv('fi-cost', p.cost_unit); sv('fi-retail', p.price_retail);
       sv('fi-wholesale', p.price_wholesale || 0);
+      sv('fi-commission', p.commission || 0);
       sv('fi-stock', p.stock_current); sv('fi-smin', p.stock_min);
       sv('fi-loc', p.location || ''); sv('fi-notes', p.notes || '');
       document.getElementById('fi-status').value = p.status || 'Activo';
@@ -2567,7 +2578,7 @@
       setTimeout(() => document.getElementById('finv').scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
     }
     function resetProductForm() {
-      ['fi-id', 'fi-sku', 'fi-name', 'fi-color', 'fi-cost', 'fi-retail', 'fi-wholesale', 'fi-stock', 'fi-smin', 'fi-loc', 'fi-notes', 'fi-margin']
+      ['fi-id', 'fi-sku', 'fi-name', 'fi-color', 'fi-cost', 'fi-retail', 'fi-wholesale', 'fi-commission', 'fi-stock', 'fi-smin', 'fi-loc', 'fi-notes', 'fi-margin']
         .forEach(id => sv(id, ''));
       document.getElementById('fi-status').value = 'Activo';
       document.getElementById('fi-cat').value = '';
@@ -2587,12 +2598,16 @@
         const tb = document.getElementById('tb-ventas');
         const em = document.getElementById('empty-ventas');
         const totalI = ss.reduce((a, s) => a + (s.total_income || 0), 0);
-        const totalP = ss.reduce((a, s) => a + (s.total_profit || 0), 0);
+        const totalComisiones = ss.reduce((a, s) => a + (s.commission_total || 0), 0);
+        const gananciaNet = ss.reduce((a, s) => a + (s.total_profit || 0), 0);
+        const gananciaBruta = gananciaNet + totalComisiones;
         const ticket = ss.length ? totalI / ss.length : 0;
         document.getElementById('kpi-ventas').innerHTML = `
       <div class="kpi"><div class="kpi-label">Total ventas</div><div class="kpi-val">${ss.length}</div></div>
       <div class="kpi"><div class="kpi-label">Ingresos totales</div><div class="kpi-val g" style="font-size:20px">${fmt(totalI)}</div></div>
-      <div class="kpi"><div class="kpi-label">Ganancias totales</div><div class="kpi-val g" style="font-size:20px">${fmt(totalP)}</div></div>
+      <div class="kpi"><div class="kpi-label">Ganancia bruta</div><div class="kpi-val g" style="font-size:20px">${fmt(gananciaBruta)}</div></div>
+      <div class="kpi"><div class="kpi-label">Comisiones pagadas</div><div class="kpi-val r" style="font-size:20px">${fmt(totalComisiones)}</div></div>
+      <div class="kpi"><div class="kpi-label">Ganancia neta</div><div class="kpi-val g" style="font-size:20px">${fmt(gananciaNet)}</div></div>
       <div class="kpi"><div class="kpi-label">Ticket promedio</div><div class="kpi-val" style="font-size:20px">${fmt(ticket)}</div></div>
     `;
         em.style.display = ss.length ? 'none' : 'block';
@@ -2604,6 +2619,7 @@
       <td style="font-size:12px">${(s.details || []).map(d => d.product_name + ' x' + d.quantity).join(', ')}</td>
       <td style="font-weight:600">${fmt(s.total_income)}</td>
       <td style="color:var(--green-dark);font-weight:600">${fmt(s.total_profit)}</td>
+      <td style="color:var(--orange);font-weight:600">${fmt(s.commission_total || 0)}</td>
       <td><span class="badge bb">${(s.channel || '').split(' ')[0]}</span></td>
       <td style="display:flex;gap:4px;flex-wrap:wrap">
         <button class="btn btn-sm btn-edit" onclick='verBoleta(${JSON.stringify(s)})'>📄 Ver</button>
@@ -2712,7 +2728,7 @@
             <span style="font-weight:600;color:var(--orange)">S/${p.price_retail}</span>
           </div>
           <div class="cli-opt-sub">
-            SKU: ${p.id} · Stock: <strong style="color:${p.stock_current <= (p.stock_min || 1) ? 'var(--amber-text)' : 'inherit'}">${p.stock_current}</strong> · ${p.category || 'General'}
+            SKU: ${p.id} · Stock: <strong style="color:${p.stock_current <= (p.stock_min || 1) ? 'var(--amber-text)' : 'inherit'}">${p.stock_current}</strong> · Comisión: <strong style="color:var(--orange)">${fmt(p.commission || 0)}</strong> · ${p.category || 'General'}
           </div>
         </div>
       `).join('');
@@ -2724,12 +2740,20 @@
       if (!p) return;
       saleItems[idx].product_id = p.id;
       saleItems[idx].price = p.price_retail || 0;
+      saleItems[idx].commission = p.commission || 0;
       renderSaleItems();
       calcSaleTotal();
     }
     function calcSaleTotal() {
-      const t = saleItems.reduce((a, i) => a + (i.price * i.quantity), 0);
-      document.getElementById('sale-total-val').textContent = fmt(t + gn('fv-delivery-fee'));
+      const subtotal = saleItems.reduce((a, i) => a + (i.price * i.quantity), 0);
+      const totalComm = saleItems.reduce((a, i) => {
+        const p = allProducts.find(prod => prod.id === i.product_id);
+        const comm = (i.commission !== undefined) ? i.commission : (p ? p.commission || 0 : 0);
+        return a + (comm * i.quantity);
+      }, 0);
+      const delivery = gn('fv-delivery-fee');
+      const total = subtotal + delivery;
+      document.getElementById('sale-total-val').innerHTML = `${fmt(total)} <span style="font-size:12px;color:var(--text-3);font-weight:normal;margin-left:8px">(Comisión est.: <strong style="color:var(--orange)">${fmt(totalComm)}</strong>)</span>`;
     }
     async function saveSale() {
       const sellerName = gv('fv-seller-name');
@@ -2745,7 +2769,15 @@
         delivery_type: gv('fv-delivery-type'),
         delivery_fee: gn('fv-delivery-fee'),
         notes: gv('fv-notes'),
-        items: items.map(i => ({ product_id: i.product_id, quantity: i.quantity, price: i.price }))
+        items: items.map(i => {
+          const p = allProducts.find(prod => prod.id === i.product_id);
+          return {
+            product_id: i.product_id,
+            quantity: i.quantity,
+            price: i.price,
+            commission: (i.commission !== undefined) ? i.commission : (p ? p.commission || 0 : 0)
+          };
+        })
       };
       try {
         await api('POST', '/api/sales', body);
@@ -2970,7 +3002,7 @@
       if (!boletaActual) return;
       const s = boletaActual;
       const items = (s.details || []).map(d => `▪ ${d.product_name} (x${d.quantity}) = ${fmt(d.subtotal)}`).join('\n');
-      
+
       const lines = [
         `🛒 *RADARSHOP* — Comprobante de compra`,
         `━━━━━━━━━━━━━━━━━━━━━━`,

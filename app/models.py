@@ -80,6 +80,7 @@ class Product(db.Model):
     location = db.Column(db.String(50))
     provider_id = db.Column(db.String(10), db.ForeignKey('provider.id'))
     status = db.Column(db.String(20), default='Activo')
+    commission = db.Column(db.Float, default=0.0)  # Comisión en S/ por unidad vendida
     notes = db.Column(db.String(300))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     sale_details = db.relationship('SaleDetail', backref='product', lazy=True)
@@ -107,6 +108,7 @@ class Product(db.Model):
             'provider': self.provider.name if self.provider else '',
             'margin_pct': self.margin_pct,
             'stock_alert': self.stock_alert,
+            'commission': self.commission or 0,
             'status': self.status, 'notes': self.notes
         }
 
@@ -119,6 +121,7 @@ class Sale(db.Model):
     channel = db.Column(db.String(50))
     payment_method = db.Column(db.String(50))
     delivery_cost = db.Column(db.Float, default=0.0)
+    commission_total = db.Column(db.Float, default=0.0)
     delivery_type = db.Column(db.String(50), default='Delivery')
     status = db.Column(db.String(20), default='Completado')
     notes = db.Column(db.String(300))
@@ -136,7 +139,7 @@ class Sale(db.Model):
 
     @property
     def total_profit(self):
-        return round(self.total_income - self.total_cost - self.delivery_cost, 2)
+        return round(self.total_income - self.total_cost - self.delivery_cost - (self.commission_total or 0), 2)
 
     def to_dict(self):
         return {
@@ -153,7 +156,8 @@ class Sale(db.Model):
             'total_income': self.total_income,
             'total_cost': self.total_cost,
             'total_profit': self.total_profit,
-            'details': [d.to_dict() for d in self.details]
+            'details': [d.to_dict() for d in self.details],
+            'commission_total': self.commission_total or 0
         }
 
 
@@ -165,6 +169,7 @@ class SaleDetail(db.Model):
     quantity = db.Column(db.Integer, nullable=False, default=1)
     price_at_sale = db.Column(db.Float, default=0)
     cost_at_sale = db.Column(db.Float, default=0)
+    commission_at_sale = db.Column(db.Float, default=0)  # Comisión por unidad al momento de la venta
 
     def to_dict(self):
         return {
@@ -173,6 +178,7 @@ class SaleDetail(db.Model):
             'quantity': self.quantity,
             'price_at_sale': self.price_at_sale,
             'cost_at_sale': self.cost_at_sale,
+            'commission_at_sale': self.commission_at_sale or 0,
             'subtotal': round(self.quantity * self.price_at_sale, 2)
         }
 
@@ -208,6 +214,7 @@ class Seller(db.Model):
     phone = db.Column(db.String(20))
     status = db.Column(db.String(20), default='Activo') # Activo/Inactivo
     notes = db.Column(db.String(300))
+    commission = db.Column(db.Float, default=0.0)  # S/ por unidad vendida
 
     def to_dict(self):
         return {
@@ -215,5 +222,7 @@ class Seller(db.Model):
             'name': self.name,
             'phone': self.phone or '',
             'status': self.status,
-            'notes': self.notes or ''
+            'notes': self.notes or '',
+            'commission': self.commission or 0,
+            'total_sales': len(self.sales) if self.sales else 0
         }
