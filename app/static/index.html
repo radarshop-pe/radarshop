@@ -1302,6 +1302,51 @@
       color: var(--red-text);
       background: var(--red-light)
     }
+
+    /* Variantes */
+    .variant-row {
+      display: grid;
+      grid-template-columns: 1fr 80px 80px 90px 30px;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px
+    }
+
+    .variant-row input,
+    .variant-row select {
+      padding: 7px 10px;
+      font-size: 13px;
+      font-family: 'DM Sans', sans-serif;
+      border: 1px solid var(--border-md);
+      border-radius: var(--r);
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+      width: 100%
+    }
+
+    .variant-row input:focus {
+      border-color: var(--orange)
+    }
+
+    .variant-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 500;
+      background: var(--blue-light);
+      color: var(--blue-text);
+      cursor: pointer;
+      margin-left: 6px
+    }
+
+    .variant-badge:hover {
+      background: var(--orange-light);
+      color: var(--orange-text)
+    }
   </style>
 </head>
 
@@ -1481,13 +1526,15 @@
         <div class="ftitle" id="finv-title">Nuevo producto</div>
         <input type="hidden" id="fi-id">
         <div class="fgrid">
-          <div class="field"><label>SKU / Código</label><input id="fi-sku" placeholder="Código automático" /></div>
+          <div class="field"><label>SKU / Código</label><input id="fi-sku" placeholder="Código automático" disabled />
+          </div>
           <div class="field"><label>Nombre *</label><input id="fi-name" placeholder="Ej: Organizador escritorio" />
           </div>
           <div class="field"><label>Categoría</label><select id="fi-cat">
               <option value="">Seleccionar...</option>
             </select></div>
-          <div class="field"><label>Color/Caracteristica</label><input id="fi-color" placeholder="Ej: Negro" /></div>
+          <div class="field"><label>Característica principal/Marca</label><input id="fi-color"
+              placeholder="Ej: Negro" /></div>
           <div class="field"><label>Proveedor</label><select id="fi-prov">
               <option value="">Seleccionar...</option>
             </select></div>
@@ -1510,6 +1557,46 @@
             </select></div>
           <div class="field ffield"><label>Notas</label><input id="fi-notes" placeholder="Observaciones opcionales" />
           </div>
+          <div class="field ffield"
+            style="background:var(--bg);padding:10px 14px;border-radius:var(--r);border:1px solid var(--border-md);display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--text)">🎨 ¿Este producto tiene variantes?</div>
+              <div style="font-size:11px;color:var(--text-3)">Colores, tallas o modelos con stock independiente</div>
+            </div>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+              <input type="checkbox" id="fi-has-variants" onchange="toggleVariantSection(this.checked)"
+                style="width:18px;height:18px;accent-color:var(--orange);cursor:pointer">
+              <span style="font-size:12px;font-weight:600;color:var(--orange)">Habilitar variantes</span>
+            </label>
+          </div>
+        </div>
+        <!-- Variantes inline (disponible al crear o editar) -->
+        <div id="finv-variants-section"
+          style="display:none;margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div style="font-size:13px;font-weight:600;color:var(--text)">🎨 Variantes del producto</div>
+            <div style="font-size:12px;color:var(--text-3)">El stock total del producto se calculará automáticamente por
+              la suma de las variantes</div>
+          </div>
+          <div id="finv-variants-list" style="margin-bottom:12px"></div>
+          <div style="background:var(--bg);border-radius:var(--r);padding:12px">
+            <div
+              style="font-size:11px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">
+              + Agregar variante</div>
+            <div style="display:grid;grid-template-columns:1fr 80px 80px 100px auto;gap:8px;align-items:end">
+              <div class="field"><label>Nombre / Color / Talla *</label><input id="finv-mv-name"
+                  placeholder="Ej: Rojo, Talla M, Modelo A" />
+              </div>
+              <div class="field"><label>Stock</label><input id="finv-mv-stock" type="number" placeholder="0" min="0" />
+              </div>
+              <div class="field"><label>Stock mín.</label><input id="finv-mv-smin" type="number" placeholder="1" min="0"
+                  value="1" /></div>
+              <div class="field"><label>Precio (S/) opcional</label><input id="finv-mv-price" type="number"
+                  placeholder="Del prod." step="0.01" min="0" /></div>
+              <button class="btn btn-p btn-sm" type="button" onclick="addVariantToForm()" style="margin-bottom:1px">+
+                Agregar</button>
+            </div>
+          </div>
         </div>
         <div class="ffoot">
           <button class="btn btn-ghost" onclick="closeF('finv');resetProductForm()">Cancelar</button>
@@ -1525,12 +1612,12 @@
               <th style="width:9%">Costo</th>
               <th style="width:9%">P.Venta</th>
               <th style="width:9%">Margen</th>
-              <th style="width:7%">Stock</th>
-              <th style="width:10%">Proveedor</th>
+              <th style="width:8%">Stock</th>
+              <th style="width:11%">Proveedor</th>
               <th style="width:8%">Atributo</th>
               <th style="width:12%">Ubicación</th>
               <th style="width:9%">Estado</th>
-              <th style="width:15%">Acciones</th>
+              <th style="width:14%">Acciones</th>
             </tr>
           </thead>
           <tbody id="tb-inv"></tbody>
@@ -1969,6 +2056,41 @@
       <div id="view-prod-content"></div>
       <div class="ffoot">
         <button class="btn btn-p" onclick="closeModal('modal-view-prod')">Entendido</button>
+      </div>
+    </div>
+    <!-- Modal Variantes -->
+    <div class="modal-bg" id="modal-variants">
+      <div class="modal" style="width:min(96vw,620px)">
+        <div class="modal-head">
+          <div>
+            <div class="modal-title">Variantes — <span id="mv-prod-name"></span></div>
+            <div style="font-size:12px;color:var(--text-3);margin-top:2px">Colores, modelos o tallas con stock
+              independiente</div>
+          </div>
+          <button class="modal-close" onclick="closeModal('modal-variants')">×</button>
+        </div>
+        <input type="hidden" id="mv-prod-id">
+        <!-- Lista de variantes existentes -->
+        <div id="mv-list" style="margin-bottom:16px"></div>
+        <!-- Formulario nueva variante -->
+        <div style="background:var(--bg);border-radius:var(--r);padding:14px">
+          <div
+            style="font-size:12px;font-weight:600;color:var(--text-2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em">
+            Nueva variante</div>
+          <div class="variant-row">
+            <div class="field"><label>Nombre *</label><input id="mv-name" placeholder="Ej: Rojo, Talla M" /></div>
+            <div class="field"><label>Stock</label><input id="mv-stock" type="number" placeholder="0" min="0" /></div>
+            <div class="field"><label>Stock mín.</label><input id="mv-smin" type="number" placeholder="1" min="0" />
+            </div>
+            <div class="field"><label>Precio (S/) opcional</label><input id="mv-price" type="number"
+                placeholder="Usar del producto" step="0.01" min="0" /></div>
+            <div style="padding-top:20px"><button class="btn btn-p btn-sm" onclick="saveVariant()">+ Agregar</button>
+            </div>
+          </div>
+        </div>
+        <div class="ffoot" style="margin-top:14px">
+          <button class="btn btn-ghost" onclick="closeModal('modal-variants')">Cerrar</button>
+        </div>
       </div>
     </div>
   </div>
@@ -2496,12 +2618,13 @@
         tb.innerHTML = allProducts.map(p => {
           const mb = p.margin_pct >= 40 ? 'bg' : p.margin_pct >= 20 ? 'ba' : 'br';
           const sb = p.stock_current <= 0 ? 'br' : p.stock_alert ? 'ba' : 'bg';
+          const varCount = (p.variants && p.variants.length) ? p.variants.length : 0;
           return `<tr onclick='viewProduct(${JSON.stringify(p)})' style="cursor:pointer">
     <td><span class="cn">${p.name}</span><span class="cc">${p.id}</span></td>
     <td><span class="badge bgr">${p.category || '—'}</span></td>
     <td>${fmt(p.cost_unit)}</td><td>${fmt(p.price_retail)}</td>
     <td><span class="badge ${mb}">${p.margin_pct}%</span></td>
-    <td><span class="badge ${sb}">${p.stock_current <= 0 ? 'Sin stock' : p.stock_alert ? '⚠ ' + p.stock_current : p.stock_current}</span></td>
+    <td><span class="badge ${sb}">${p.stock_current <= 0 ? 'Sin stock' : p.stock_alert ? '⚠ ' + p.stock_current : p.stock_current}</span> ${p.has_variants && varCount > 0 ? `<span style="font-size:11px;color:var(--text-3);margin-left:4px">(${varCount} var.)</span>` : ''}</td>
     <td style="color:var(--text-2);font-size:12px">${p.provider || '—'}</td>
     <td style="color:var(--text-2);font-size:12px">${p.color || '—'}</td>
     <td style="color:var(--text-2);font-size:12px">${p.location || '—'}</td>
@@ -2526,24 +2649,206 @@
     //Vista de productos
     function viewProduct(p) {
       const content = document.getElementById('view-prod-content');
+      const variantsHtml = (p.variants && p.variants.length > 0)
+        ? `<div style="grid-column: span 2; background: var(--bg); padding: 10px 12px; border-radius: var(--r); border: 1px solid var(--border-md); margin-top: 4px">
+             <label style="font-size:11px; font-weight:600; color:var(--text-2); text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:6px">🎨 Modelos (${p.variants.length})</label>
+             <div style="display:flex; flex-wrap:wrap; gap:6px">
+               ${p.variants.map(v => `
+                 <span style="display:inline-flex; align-items:center; gap:6px; background:var(--surface); border:1px solid var(--border-md); padding:4px 8px; border-radius:var(--r); font-size:12px">
+                   <strong>${v.name}</strong>: <span style="color:${v.stock_current <= (v.stock_min || 1) ? 'var(--amber-text)' : 'var(--text)'}; font-weight:600">${v.stock_current} unid.</span>
+                   ${v.price_override ? `<span style="color:var(--orange); font-size:11px">(${fmt(v.price_override)})</span>` : ''}
+                 </span>
+               `).join('')}
+             </div>
+           </div>`
+        : '';
+
       content.innerHTML = `
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; padding:10px">
-            <div><label style="font-size:11px; color:var(--text-2)">SKU</label><div>${p.id}</div></div>
-            <div><label style="font-size:11px; color:var(--text-2)">Estado</label><div>${p.status}</div></div>
-            <div style="grid-column: span 2"><label style="font-size:11px; color:var(--text-2)">Nombre</label><div style="font-weight:600">${p.name}</div></div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; padding:10px">
+            <div><label style="font-size:11px; color:var(--text-2)">SKU</label><div style="font-weight:600">${p.id}</div></div>
+            <div><label style="font-size:11px; color:var(--text-2)">Estado</label><div><span class="badge ${p.status === 'Activo' ? 'bg' : 'bgr'}">${p.status}</span></div></div>
+            <div style="grid-column: span 2"><label style="font-size:11px; color:var(--text-2)">Nombre</label><div style="font-weight:600; font-size:14px">${p.name}</div></div>
+            <div><label style="font-size:11px; color:var(--text-2)">Categoría</label><div>${p.category || '—'}</div></div>
+            <div><label style="font-size:11px; color:var(--text-2)">Marca / Característica</label><div>${p.color || '—'}</div></div>
+            <div><label style="font-size:11px; color:var(--text-2)">Costo Unitario</label><div>${fmt(p.cost_unit)}</div></div>
             <div><label style="font-size:11px; color:var(--text-2)">Precio Venta</label><div style="color:var(--green-text); font-weight:600">${fmt(p.price_retail)}</div></div>
             <div><label style="font-size:11px; color:var(--text-2)">Precio Mayorista</label><div style="color:var(--blue-text); font-weight:600">${fmt(p.price_wholesale)}</div></div>
-            <div><label style="font-size:11px; color:var(--text-2)">Comisión vendedor</label><div style="color:var(--orange); font-weight:600">${fmt(p.commission || 0)}</div></div>
-            <div><label style="font-size:11px; color:var(--text-2)">Stock</label><div>${p.stock_current} unidades</div></div>
+            <div><label style="font-size:11px; color:var(--text-2)">Comisión Vendedor</label><div style="color:var(--orange); font-weight:600">${fmt(p.commission || 0)}</div></div>
+            <div><label style="font-size:11px; color:var(--text-2)">Stock Total</label><div style="font-weight:600">${p.stock_current} unidades ${p.has_variants ? '<span style="font-size:11px; color:var(--text-3); font-weight:normal">(por variantes)</span>' : ''}</div></div>
+            <div><label style="font-size:11px; color:var(--text-2)">Stock Mínimo</label><div>${p.stock_min} unidades</div></div>
             <div><label style="font-size:11px; color:var(--text-2)">Proveedor</label><div>${p.provider || '—'}</div></div>
             <div><label style="font-size:11px; color:var(--text-2)">Ubicación</label><div>${p.location || '—'}</div></div>
-            <div style="grid-column: span 2"><label style="font-size:11px; color:var(--text-2)">Color / Detalles</label><div>${p.color || '—'}</div></div>
+            ${p.notes ? `<div style="grid-column: span 2"><label style="font-size:11px; color:var(--text-2)">Notas</label><div>${p.notes}</div></div>` : ''}
+            ${variantsHtml}
         </div>
-    `;
+      `;
       openModal('modal-view-prod');
     }
+    let tempProductVariants = [];
+
+    function toggleVariantSection(hasVariants) {
+      const section = document.getElementById('finv-variants-section');
+      const stockInput = document.getElementById('fi-stock');
+      const prodId = gv('fi-id');
+
+      if (hasVariants) {
+        section.style.display = 'block';
+        stockInput.readOnly = true;
+        stockInput.style.background = 'var(--bg)';
+        stockInput.style.color = 'var(--text-2)';
+        stockInput.placeholder = 'Suma de variantes';
+        if (prodId) {
+          loadVariantsInline(prodId);
+        } else {
+          renderTempVariants();
+        }
+      } else {
+        section.style.display = 'none';
+        stockInput.readOnly = false;
+        stockInput.style.background = 'var(--surface)';
+        stockInput.style.color = 'var(--text)';
+        stockInput.placeholder = '0';
+        if (!prodId) {
+          tempProductVariants = [];
+          stockInput.value = '';
+        }
+      }
+    }
+
+    function renderTempVariants() {
+      const list = document.getElementById('finv-variants-list');
+      if (!tempProductVariants.length) {
+        list.innerHTML = '<div style="font-size:12px;color:var(--text-3);padding:4px 0">Sin variantes agregadas aún. Ingresa la primera abajo.</div>';
+        document.getElementById('fi-stock').value = 0;
+        return;
+      }
+      const totalStock = tempProductVariants.reduce((a, v) => a + (parseInt(v.stock_current) || 0), 0);
+      document.getElementById('fi-stock').value = totalStock;
+
+      list.innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 70px 70px 80px 30px;gap:8px;margin-bottom:6px">
+          <span style="font-size:11px;color:var(--text-3);font-weight:600">VARIANTE</span>
+          <span style="font-size:11px;color:var(--text-3);font-weight:600">STOCK</span>
+          <span style="font-size:11px;color:var(--text-3);font-weight:600">MÍN.</span>
+          <span style="font-size:11px;color:var(--text-3);font-weight:600">PRECIO</span>
+          <span></span>
+        </div>
+        ${tempProductVariants.map((v, idx) => `
+          <div style="display:grid;grid-template-columns:1fr 70px 70px 80px 30px;gap:8px;align-items:center;margin-bottom:6px">
+            <input value="${v.name}" oninput="tempProductVariants[${idx}].name=this.value"
+              style="padding:6px 9px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-md);border-radius:var(--r);background:var(--bg);color:var(--text);width:100%"/>
+            <input type="number" value="${v.stock_current}" oninput="tempProductVariants[${idx}].stock_current=parseInt(this.value)||0;renderTempVariants()"
+              style="padding:6px 9px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-md);border-radius:var(--r);background:var(--bg);color:var(--text);width:100%"/>
+            <input type="number" value="${v.stock_min}" oninput="tempProductVariants[${idx}].stock_min=parseInt(this.value)||1"
+              style="padding:6px 9px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-md);border-radius:var(--r);background:var(--bg);color:var(--text);width:100%"/>
+            <input type="number" value="${v.price_override || ''}" placeholder="Heredar" oninput="tempProductVariants[${idx}].price_override=this.value?parseFloat(this.value):null"
+              style="padding:6px 9px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-md);border-radius:var(--r);background:var(--bg);color:var(--text);width:100%"/>
+            <button class="btn btn-sm btn-del" type="button" onclick="tempProductVariants.splice(${idx},1);renderTempVariants()" style="padding:4px 7px">×</button>
+          </div>
+        `).join('')}
+      `;
+    }
+
+    async function addVariantToForm() {
+      const prodId = gv('fi-id');
+      const name = document.getElementById('finv-mv-name').value.trim();
+      if (!name) { toast('El nombre de la variante es requerido', 'er'); return; }
+      const stock = parseInt(document.getElementById('finv-mv-stock').value) || 0;
+      const smin = parseInt(document.getElementById('finv-mv-smin').value) || 1;
+      const priceVal = document.getElementById('finv-mv-price').value;
+      const price_override = priceVal ? parseFloat(priceVal) : null;
+
+      if (!prodId) {
+        tempProductVariants.push({ name, stock_current: stock, stock_min: smin, price_override, status: 'Activo' });
+        document.getElementById('finv-mv-name').value = '';
+        document.getElementById('finv-mv-stock').value = '';
+        document.getElementById('finv-mv-price').value = '';
+        renderTempVariants();
+      } else {
+        try {
+          await api('POST', `/api/products/${prodId}/variants`, {
+            name, stock_current: stock, stock_min: smin, price_override
+          });
+          toast('Variante agregada');
+          document.getElementById('finv-mv-name').value = '';
+          document.getElementById('finv-mv-stock').value = '';
+          document.getElementById('finv-mv-price').value = '';
+          await loadVariantsInline(prodId);
+          loadInventory();
+        } catch (e) { toast(e.message, 'er'); }
+      }
+    }
+
+    async function loadVariantsInline(prodId) {
+      const section = document.getElementById('finv-variants-section');
+      const list = document.getElementById('finv-variants-list');
+      if (!prodId) { section.style.display = 'none'; return; }
+      try {
+        const variants = await api('GET', `/api/products/${prodId}/variants`);
+        if (!variants.length) {
+          list.innerHTML = '<div style="font-size:12px;color:var(--text-3);padding:4px 0">Sin variantes aún. Agrega la primera abajo.</div>';
+          return;
+        }
+        const totalStock = variants.filter(v => v.status === 'Activo').reduce((a, v) => a + (v.stock_current || 0), 0);
+        document.getElementById('fi-stock').value = totalStock;
+
+        list.innerHTML = `
+          <div style="display:grid;grid-template-columns:1fr 70px 70px 80px 80px 30px;gap:8px;margin-bottom:6px">
+            <span style="font-size:11px;color:var(--text-3);font-weight:600">VARIANTE</span>
+            <span style="font-size:11px;color:var(--text-3);font-weight:600">STOCK</span>
+            <span style="font-size:11px;color:var(--text-3);font-weight:600">MÍN.</span>
+            <span style="font-size:11px;color:var(--text-3);font-weight:600">PRECIO</span>
+            <span style="font-size:11px;color:var(--text-3);font-weight:600">ESTADO</span>
+            <span></span>
+          </div>
+          ${variants.map(v => `
+            <div style="display:grid;grid-template-columns:1fr 70px 70px 80px 80px 30px;gap:8px;align-items:center;margin-bottom:6px">
+              <input value="${v.name}" onchange="updateVariantField(${v.id},'name',this.value)"
+                style="padding:6px 9px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-md);border-radius:var(--r);background:var(--bg);color:var(--text);width:100%"/>
+              <input type="number" value="${v.stock_current}" onchange="updateVariantField(${v.id},'stock_current',this.value)"
+                style="padding:6px 9px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-md);border-radius:var(--r);background:var(--bg);color:var(--text);width:100%"/>
+              <input type="number" value="${v.stock_min}" onchange="updateVariantField(${v.id},'stock_min',this.value)"
+                style="padding:6px 9px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-md);border-radius:var(--r);background:var(--bg);color:var(--text);width:100%"/>
+              <input type="number" value="${v.price_override || ''}" placeholder="Heredar" onchange="updateVariantField(${v.id},'price_override',this.value)"
+                style="padding:6px 9px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-md);border-radius:var(--r);background:var(--bg);color:var(--text);width:100%"/>
+              <select onchange="updateVariantField(${v.id},'status',this.value)"
+                style="padding:6px 9px;font-size:12px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-md);border-radius:var(--r);background:var(--bg);color:var(--text);width:100%">
+                <option ${v.status === 'Activo' ? 'selected' : ''}>Activo</option>
+                <option ${v.status === 'Inactivo' ? 'selected' : ''}>Inactivo</option>
+              </select>
+              <button class="btn btn-sm btn-del" type="button" onclick="delVariantInline(${v.id})" style="padding:4px 7px">×</button>
+            </div>`).join('')}
+        `;
+      } catch (e) { console.error(e); }
+    }
+
+    async function updateVariantField(vid, field, value) {
+      try {
+        const body = {};
+        body[field] = field === 'stock_current' || field === 'stock_min' ? parseInt(value) || 0
+          : field === 'price_override' ? (value ? parseFloat(value) : null)
+            : value;
+        await api('PUT', `/api/variants/${vid}`, body);
+        const prodId = gv('fi-id');
+        if (prodId) await loadVariantsInline(prodId);
+        loadInventory();
+      } catch (e) { toast(e.message, 'er'); }
+    }
+
+    async function delVariantInline(vid) {
+      if (!confirm('¿Eliminar esta variante?')) return;
+      const prodId = gv('fi-id');
+      try {
+        await api('DELETE', `/api/variants/${vid}`);
+        toast('Variante eliminada');
+        await loadVariantsInline(prodId);
+        loadInventory();
+      } catch (e) { toast(e.message, 'er'); }
+    }
+
     async function saveProduct() {
       const id = gv('fi-id');
+      const hasVariants = document.getElementById('fi-has-variants').checked;
       const body = {
         name: gv('fi-name'), color: gv('fi-color'),
         category_id: document.getElementById('fi-cat').value || null,
@@ -2555,6 +2860,9 @@
         location: gv('fi-loc'), notes: gv('fi-notes'),
         status: gv('fi-status')
       };
+      if (!id && hasVariants && tempProductVariants.length > 0) {
+        body.variants = tempProductVariants;
+      }
       if (!body.name || !body.cost_unit || !body.price_retail) { toast('Nombre, costo y precio son requeridos', 'er'); return; }
       try {
         id ? await api('PUT', `/api/products/${id}`, body) : await api('POST', '/api/products', body);
@@ -2574,16 +2882,22 @@
       if (p.provider_id) document.getElementById('fi-prov').value = p.provider_id;
       calcMargin();
       document.getElementById('finv-title').textContent = 'Editar producto — ' + p.id;
+      const hasVariants = !!(p.has_variants && p.variants && p.variants.length > 0);
+      document.getElementById('fi-has-variants').checked = hasVariants;
+      toggleVariantSection(hasVariants);
       openF('finv');
       setTimeout(() => document.getElementById('finv').scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
     }
     function resetProductForm() {
-      ['fi-id', 'fi-sku', 'fi-name', 'fi-color', 'fi-cost', 'fi-retail', 'fi-wholesale', 'fi-commission', 'fi-stock', 'fi-smin', 'fi-loc', 'fi-notes', 'fi-margin']
+      ['fi-id', 'fi-sku', 'fi-name', 'fi-color', 'fi-cost', 'fi-retail', 'fi-wholesale', 'fi-commission', 'fi-stock', 'fi-smin', 'fi-loc', 'fi-notes', 'fi-margin', 'finv-mv-name', 'finv-mv-stock', 'finv-mv-price']
         .forEach(id => sv(id, ''));
       document.getElementById('fi-status').value = 'Activo';
       document.getElementById('fi-cat').value = '';
       document.getElementById('fi-prov').value = '';
       document.getElementById('finv-title').textContent = 'Nuevo producto';
+      document.getElementById('fi-has-variants').checked = false;
+      tempProductVariants = [];
+      toggleVariantSection(false);
     }
     async function delProduct(id) {
       if (!confirm('¿Eliminar producto ' + id + '?')) return;
@@ -2682,20 +2996,41 @@
       const c = document.getElementById('sale-items');
       c.innerHTML = saleItems.map((item, idx) => {
         const prod = allProducts.find(p => p.id === item.product_id);
-        const prodName = prod ? prod.name : (item.product_id || '');
+        const prodName = prod ? prod.name : '';
+        const variantSel = (item.variants && item.variants.length > 0)
+          ? `<select class="item-variant"
+               onchange="saleItems[${idx}].variant_id=this.value;
+                         const op=this.options[this.selectedIndex];
+                         if(op.dataset.price) saleItems[${idx}].price=parseFloat(op.dataset.price);
+                         calcSaleTotal();"
+               style="margin-top:4px;padding:6px 10px;font-size:12px;font-family:'DM Sans',sans-serif;
+                      border:1px solid var(--orange);border-radius:var(--r);
+                      background:var(--surface);color:var(--text);width:100%">
+              <option value="">— Selecciona variante *</option>
+              ${item.variants.map(v =>
+            `<option value="${v.id}" data-price="${v.price_override || ''}"
+                  ${item.variant_id == v.id ? 'selected' : ''}>
+                  ${v.name} (stock: ${v.stock_current})</option>`
+          ).join('')}
+            </select>` : '';
         return `<div class="sale-row">
-      <div class="prod-search-wrap" style="position:relative">
-        <input class="item-search" placeholder="Buscar producto o SKU..." autocomplete="off"
-          value="${prodName.replace(/"/g, '&quot;')}"
-          oninput="searchProductItem(this, ${idx})"
-          onfocus="searchProductItem(this, ${idx})"
-          style="padding:7px 10px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-md);border-radius:var(--r);background:var(--surface);color:var(--text);outline:none;width:100%"/>
-        <div class="prod-dd cli-dd" id="prod-dd-${idx}"></div>
-      </div>
-      <input class="item-qty" type="number" min="1" value="${item.quantity}" oninput="saleItems[${idx}].quantity=parseInt(this.value)||1;calcSaleTotal()"/>
-      <input class="item-price" type="number" min="0" step="0.01" value="${item.price}" oninput="saleItems[${idx}].price=parseFloat(this.value)||0;calcSaleTotal()"/>
-      <button class="rm-btn" onclick="removeSaleItem(${idx})">×</button>
-    </div>`;
+          <div style="display:flex;flex-direction:column;gap:4px;position:relative" class="prod-search-wrap">
+            <input placeholder="Buscar producto..." autocomplete="off"
+              value="${prodName}"
+              oninput="searchProductItem(this, ${idx})"
+              onfocus="searchProductItem(this, ${idx})"
+              style="padding:7px 10px;font-size:13px;font-family:'DM Sans',sans-serif;
+                     border:1px solid var(--border-md);border-radius:var(--r);
+                     background:var(--surface);color:var(--text);outline:none;width:100%"/>
+            <div class="cli-dd prod-dd" id="prod-dd-${idx}" style="top:38px;z-index:99"></div>
+            ${variantSel}
+          </div>
+          <input class="item-qty" type="number" min="1" value="${item.quantity}"
+            oninput="saleItems[${idx}].quantity=parseInt(this.value)||1;calcSaleTotal()"/>
+          <input class="item-price" type="number" min="0" step="0.01" value="${item.price}"
+            oninput="saleItems[${idx}].price=parseFloat(this.value)||0;calcSaleTotal()"/>
+          <button class="rm-btn" onclick="removeSaleItem(${idx})">×</button>
+        </div>`;
       }).join('');
     }
     function searchProductItem(input, idx) {
@@ -2741,6 +3076,9 @@
       saleItems[idx].product_id = p.id;
       saleItems[idx].price = p.price_retail || 0;
       saleItems[idx].commission = p.commission || 0;
+      saleItems[idx].variant_id = '';
+      saleItems[idx].variants = p.has_variants ? (p.variants || []) : [];
+      document.querySelectorAll('.prod-dd').forEach(dd => dd.classList.remove('on'));
       renderSaleItems();
       calcSaleTotal();
     }
@@ -2775,6 +3113,7 @@
             product_id: i.product_id,
             quantity: i.quantity,
             price: i.price,
+            variant_id: i.variant_id || null,
             commission: (i.commission !== undefined) ? i.commission : (p ? p.commission || 0 : 0)
           };
         })
@@ -3038,7 +3377,93 @@
 
       window.open(waUrl, '_blank');
     }
-
+    // ── VARIANTES ─────────────────────────────────────────────
+    async function openVariants(prodId, prodName) {
+      document.getElementById('mv-prod-id').value = prodId;
+      document.getElementById('mv-prod-name').textContent = prodName;
+      document.getElementById('mv-name').value = '';
+      document.getElementById('mv-stock').value = '';
+      document.getElementById('mv-smin').value = '1';
+      document.getElementById('mv-price').value = '';
+      await renderVariantList(prodId);
+      openModal('modal-variants');
+    }
+    async function renderVariantList(prodId) {
+      try {
+        const variants = await api('GET', `/api/products/${prodId}/variants`);
+        const el = document.getElementById('mv-list');
+        if (!variants.length) {
+          el.innerHTML = '<div style="color:var(--text-3);font-size:13px;padding:8px 0">Sin variantes aún. Agrega la primera abajo.</div>';
+          return;
+        }
+        el.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 70px 70px 80px 80px 32px;gap:8px;margin-bottom:6px">
+        <span style="font-size:11px;color:var(--text-3);font-weight:600">VARIANTE</span>
+        <span style="font-size:11px;color:var(--text-3);font-weight:600">STOCK</span>
+        <span style="font-size:11px;color:var(--text-3);font-weight:600">MÍN.</span>
+        <span style="font-size:11px;color:var(--text-3);font-weight:600">PRECIO</span>
+        <span style="font-size:11px;color:var(--text-3);font-weight:600">ESTADO</span>
+        <span></span>
+      </div>
+      ${variants.map(v => `
+        <div style="display:grid;grid-template-columns:1fr 70px 70px 80px 80px 32px;gap:8px;align-items:center;margin-bottom:6px">
+          <input value="${v.name}" onchange="updateVariantField(${v.id},'name',this.value)"
+            style="padding:6px 9px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-md);border-radius:var(--r);background:var(--bg);color:var(--text);width:100%"/>
+          <input type="number" value="${v.stock_current}" onchange="updateVariantField(${v.id},'stock_current',this.value)"
+            style="padding:6px 9px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-md);border-radius:var(--r);background:var(--bg);color:var(--text);width:100%"/>
+          <input type="number" value="${v.stock_min}" onchange="updateVariantField(${v.id},'stock_min',this.value)"
+            style="padding:6px 9px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-md);border-radius:var(--r);background:var(--bg);color:var(--text);width:100%"/>
+          <input type="number" value="${v.price_override || ''}" placeholder="Del prod." onchange="updateVariantField(${v.id},'price_override',this.value)"
+            style="padding:6px 9px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-md);border-radius:var(--r);background:var(--bg);color:var(--text);width:100%"/>
+          <select onchange="updateVariantField(${v.id},'status',this.value)"
+            style="padding:6px 9px;font-size:12px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-md);border-radius:var(--r);background:var(--bg);color:var(--text);width:100%">
+            <option ${v.status === 'Activo' ? 'selected' : ''}>Activo</option>
+            <option ${v.status === 'Inactivo' ? 'selected' : ''}>Inactivo</option>
+          </select>
+          <button class="btn btn-sm btn-del" onclick="delVariant(${v.id})" style="padding:5px 8px">×</button>
+        </div>`).join('')}`;
+      } catch (e) { console.error(e); }
+    }
+    async function saveVariant() {
+      const prodId = document.getElementById('mv-prod-id').value;
+      const name = document.getElementById('mv-name').value.trim();
+      if (!name) { toast('El nombre es requerido', 'er'); return; }
+      const priceVal = document.getElementById('mv-price').value;
+      try {
+        await api('POST', `/api/products/${prodId}/variants`, {
+          name,
+          stock_current: parseInt(document.getElementById('mv-stock').value) || 0,
+          stock_min: parseInt(document.getElementById('mv-smin').value) || 1,
+          price_override: priceVal ? parseFloat(priceVal) : null
+        });
+        toast('Variante agregada');
+        document.getElementById('mv-name').value = '';
+        document.getElementById('mv-stock').value = '';
+        document.getElementById('mv-price').value = '';
+        await renderVariantList(prodId);
+        loadInventory();
+      } catch (e) { toast(e.message, 'er'); }
+    }
+    async function updateVariantField(vid, field, value) {
+      try {
+        const body = {};
+        body[field] = field === 'stock_current' || field === 'stock_min' ? parseInt(value) || 0
+          : field === 'price_override' ? (value ? parseFloat(value) : null)
+            : value;
+        await api('PUT', `/api/variants/${vid}`, body);
+        loadInventory();
+      } catch (e) { toast(e.message, 'er'); }
+    }
+    async function delVariant(vid) {
+      if (!confirm('¿Eliminar esta variante?')) return;
+      const prodId = document.getElementById('mv-prod-id').value;
+      try {
+        await api('DELETE', `/api/variants/${vid}`);
+        toast('Variante eliminada');
+        await renderVariantList(prodId);
+        loadInventory();
+      } catch (e) { toast(e.message, 'er'); }
+    }
     // ── EXPORT ────────────────────────────────────────────────
     function exportExcel() { window.location.href = '/api/export/excel'; toast('Descargando Excel...'); }
 
@@ -3055,6 +3480,7 @@
 
       addSaleItem();
       await loadCategories();
+      await loadSellers();
       await loadInventory();
       await loadSales();
       await loadClients();

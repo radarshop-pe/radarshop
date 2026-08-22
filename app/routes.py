@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request, send_file, session
-from models import db, Product, Provider, Client, Sale, SaleDetail, Category, Inquiry, Seller
+from models import db, Product, Provider, Client, Sale, SaleDetail, Category, Inquiry, Seller, ProductVariant
 from datetime import datetime
 from io import BytesIO
 import openpyxl
@@ -213,6 +213,12 @@ def add_product():
     while Product.query.get(sku):
         count += 1
         sku = f"P{str(count + 1).zfill(3)}"
+    
+    variants_data = d.get('variants') or []
+    stock_current = int(d.get('stock_current', 0))
+    if variants_data:
+        stock_current = sum(int(v.get('stock_current', 0)) for v in variants_data if (v.get('name') or '').strip())
+
     p = Product(
         id=sku,
         name=d['name'].strip(),
@@ -221,7 +227,7 @@ def add_product():
         cost_unit=float(d['cost_unit']),
         price_retail=float(d['price_retail']),
         price_wholesale=float(d.get('price_wholesale') or 0),
-        stock_current=int(d.get('stock_current', 0)),
+        stock_current=stock_current,
         stock_min=int(d.get('stock_min', 1)),
         location=d.get('location', ''),
         provider_id=d.get('provider_id') or None,
@@ -230,6 +236,21 @@ def add_product():
         notes=d.get('notes', '')
     )
     db.session.add(p)
+    db.session.flush()
+
+    for vdata in variants_data:
+        vname = (vdata.get('name') or '').strip()
+        if vname:
+            v = ProductVariant(
+                product_id=p.id,
+                name=vname,
+                stock_current=int(vdata.get('stock_current', 0)),
+                stock_min=int(vdata.get('stock_min', 1)),
+                price_override=float(vdata['price_override']) if vdata.get('price_override') else None,
+                status=vdata.get('status', 'Activo')
+            )
+            db.session.add(v)
+
     db.session.commit()
     return ok(p.to_dict(), 'Producto creado', 201)
 
@@ -245,7 +266,12 @@ def update_product(pid):
     p.cost_unit = float(d.get('cost_unit', p.cost_unit))
     p.price_retail = float(d.get('price_retail', p.price_retail))
     p.price_wholesale = float(d.get('price_wholesale') or p.price_wholesale or 0)
-    p.stock_current = int(d.get('stock_current', p.stock_current))
+    
+    if p.variants:
+        p.stock_current = sum(v.stock_current for v in p.variants if v.status == 'Activo')
+    else:
+        p.stock_current = int(d.get('stock_current', p.stock_current))
+
     p.stock_min = int(d.get('stock_min', p.stock_min))
     p.location = d.get('location', p.location)
     p.provider_id = d.get('provider_id') or p.provider_id
@@ -389,6 +415,66 @@ def delete_provider(pid):
     db.session.commit()
     return ok(msg='Proveedor eliminado')
 
+# ── VARIANTES DE PRODUCTO ────────────────────────────────
+
+@inventory_bp.route('/api/products/<pid>/variants', methods=['GET'])
+def get_variants(pid):
+    variants = ProductVariant.query.filter_by(product_id=pid).order_by(ProductVariant.name).all()
+    return ok([v.to_dict() for v in variants])
+@inventory_bp.route('/api/products/<pid>/variants', methods=['POST'])
+def add_variant(pid):
+    p = Product.query.get(pid)
+    if not p:
+        return err('Producto no encontrado', 404)
+    d = request.json
+    if not d.get('name'):
+        return err('El nombre de la variante es requerido')
+    v = ProductVariant(
+        product_id=pid,
+        name=d['name'].strip(),
+        stock_current=int(d.get('stock_current', 0)),
+        stock_min=int(d.get('stock_min', 1)),
+        price_override=float(d['price_override']) if d.get('price_override') else None,
+        status='Activo'
+    )
+    db.session.add(v)
+    # Actualizar stock del producto padre como suma de variantes
+    db.session.flush()
+    p.stock_current = sum(x.stock_current for x in p.variants)
+    db.session.commit()
+    return ok(v.to_dict(), 'Variante creada', 201)
+
+@inventory_bp.route('/api/variants/<int:vid>', methods=['PUT'])
+def update_variant(vid):
+    v = ProductVariant.query.get(vid)
+    if not v:
+        return err('No encontrado', 404)
+    d = request.json
+    v.name = d.get('name', v.name)
+    v.stock_current = int(d.get('stock_current', v.stock_current))
+    v.stock_min = int(d.get('stock_min', v.stock_min))
+    v.price_override = float(d['price_override']) if d.get('price_override') else None
+    v.status = d.get('status', v.status)
+    # Actualizar stock del producto padre
+    prod = Product.query.get(v.product_id)
+    if prod:
+        prod.stock_current = sum(x.stock_current for x in prod.variants)
+    db.session.commit()
+    return ok(v.to_dict())
+
+@inventory_bp.route('/api/variants/<int:vid>', methods=['DELETE'])
+def delete_variant(vid):
+    v = ProductVariant.query.get(vid)
+    if not v:
+        return err('No encontrado', 404)
+    prod = Product.query.get(v.product_id)
+    db.session.delete(v)
+    db.session.flush()
+    if prod:
+        prod.stock_current = sum(x.stock_current for x in prod.variants)
+    db.session.commit()
+    return ok(msg='Variante eliminada')
+
 # ── VENTAS ────────────────────────────────────────────────
 @inventory_bp.route('/api/sales', methods=['GET'])
 def get_sales():
@@ -446,15 +532,27 @@ def create_sale():
             if not prod:
                 db.session.rollback()
                 return err(f"Producto {item.get('product_id')} no encontrado")
-            if prod.stock_current < int(item.get('quantity', 1)):
-                db.session.rollback()
-                return err(f"Stock insuficiente para '{prod.name}'. Disponible: {prod.stock_current}")
+            variant_id = item.get('variant_id')
+            qty = int(item.get('quantity', 1))
+            if variant_id:
+                variant = ProductVariant.query.get(variant_id)
+                if not variant:
+                    db.session.rollback()
+                    return err(f"Variante no encontrada")
+                if variant.stock_current < qty:
+                    db.session.rollback()
+                    return err(f"Stock insuficiente para '{prod.name} — {variant.name}'. Disponible: {variant.stock_current}")
+            else:
+                if prod.stock_current < qty:
+                    db.session.rollback()
+                    return err(f"Stock insuficiente para '{prod.name}'. Disponible: {prod.stock_current}")
 
         # Registrar detalles, descontar stock y calcular comisiones por producto
         total_comm = 0.0
         for item in items:
             prod = Product.query.get(item['product_id'])
             qty = int(item.get('quantity', 1))
+            variant_id = item.get('variant_id') or None
             price = float(item.get('price', prod.price_retail))
             # Prioridad 1: Comisión configurada en el item; Prioridad 2: Comisión del producto; Prioridad 3: Comisión del vendedor
             if item.get('commission') is not None and item.get('commission') != '':
@@ -467,12 +565,17 @@ def create_sale():
             detail = SaleDetail(
                 sale_id=new_sale.id,
                 product_id=prod.id,
+                variant_id=variant_id,
                 quantity=qty,
                 price_at_sale=price,
                 cost_at_sale=prod.cost_unit,
                 commission_at_sale=comm_unit
             )
-            prod.stock_current -= qty
+            if variant_id:
+                variant = ProductVariant.query.get(variant_id)
+                variant.stock_current -= qty
+            else:
+                prod.stock_current -= qty
             db.session.add(detail)
             total_comm += comm_unit * qty
 

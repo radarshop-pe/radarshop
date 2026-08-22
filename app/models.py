@@ -84,7 +84,7 @@ class Product(db.Model):
     notes = db.Column(db.String(300))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     sale_details = db.relationship('SaleDetail', backref='product', lazy=True)
-
+    variants = db.relationship('ProductVariant', backref='product', lazy=True, cascade='all, delete-orphan')
     @property
     def margin_pct(self):
         if self.price_retail and self.price_retail > 0:
@@ -109,7 +109,9 @@ class Product(db.Model):
             'margin_pct': self.margin_pct,
             'stock_alert': self.stock_alert,
             'commission': self.commission or 0,
-            'status': self.status, 'notes': self.notes
+            'status': self.status, 'notes': self.notes,
+            'has_variants': len(self.variants) > 0,
+            'variants': [v.to_dict() for v in self.variants if v.status == 'Activo']
         }
 
 
@@ -166,15 +168,19 @@ class SaleDetail(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     sale_id = db.Column(db.String(15), db.ForeignKey('sale.id'))
     product_id = db.Column(db.String(10), db.ForeignKey('product.id'))
+    variant_id = db.Column(db.Integer, db.ForeignKey('product_variant.id'), nullable=True)
     quantity = db.Column(db.Integer, nullable=False, default=1)
     price_at_sale = db.Column(db.Float, default=0)
     cost_at_sale = db.Column(db.Float, default=0)
     commission_at_sale = db.Column(db.Float, default=0)  # Comisión por unidad al momento de la venta
 
     def to_dict(self):
+        from models import ProductVariant
+        variant = ProductVariant.query.get(self.variant_id) if self.variant_id else None
         return {
             'id': self.id, 'product_id': self.product_id,
             'product_name': self.product.name if self.product else '',
+            'variant_name': variant.name if variant else '',
             'quantity': self.quantity,
             'price_at_sale': self.price_at_sale,
             'cost_at_sale': self.cost_at_sale,
@@ -207,7 +213,29 @@ class Inquiry(db.Model):
             'result': self.result,
             'no_buy_reason': self.no_buy_reason
         }
-    
+
+class ProductVariant(db.Model):
+    __tablename__ = 'product_variant'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    product_id = db.Column(db.String(10), db.ForeignKey('product.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)  # Ej: Rojo, Talla M, Modelo 2
+    stock_current = db.Column(db.Integer, default=0)
+    stock_min = db.Column(db.Integer, default=1)
+    price_override = db.Column(db.Float, nullable=True)  # None = usa precio del producto padre
+    status = db.Column(db.String(20), default='Activo')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'product_id': self.product_id,
+            'name': self.name,
+            'stock_current': self.stock_current,
+            'stock_min': self.stock_min,
+            'price_override': self.price_override,
+            'status': self.status,
+            'stock_alert': self.stock_current <= self.stock_min
+        }
+
 class Seller(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
