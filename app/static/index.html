@@ -5,12 +5,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Radarshop — Panel de gestión</title>
+  <meta name="robots" content="noindex, nofollow">
+  <!-- Optimización de carga para Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/html5-qrcode"></script>
   <link rel="icon" type="image/png" href="/static/img/radar_ico.png">
   <link rel="apple-touch-icon" href="/static/img/radar_ico.png">
-  <link
-    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap"
-    rel="stylesheet">
+
   <style>
     :root {
       --orange: #FE7301;
@@ -1516,8 +1519,8 @@
       <div class="toolbar">
         <button class="btn btn-p" onclick="openF('finv')">+ Agregar producto</button>
         <!--<button class="btn" onclick="startScanner('fi-sku')">📷 Escanear SKU</button>-->
-        <input class="srch" placeholder="Buscar por nombre, SKU..." oninput="filterTb('tb-inv',this.value)">
-        <select class="sel-f" id="filter-cat" onchange="filterCol('tb-inv',1,this.value)">
+        <input class="srch" id="srch-inv" placeholder="Buscar por nombre, SKU..." oninput="applyInventoryFilter()">
+        <select class="sel-f" id="filter-cat" onchange="applyInventoryFilter()">
           <option value="">Todas las categorías</option>
         </select>
       </div>
@@ -1639,7 +1642,7 @@
       <div class="toolbar">
         <button class="btn btn-p" onclick="openF('fventa')">+ Registrar venta</button>
         <input type="hidden" id="fv-id">
-        <input class="srch" placeholder="Buscar por cliente, vendedor..." oninput="filterTb('tb-ventas',this.value)">
+        <input class="srch" id="srch-ventas" placeholder="Buscar por cliente, vendedor..." oninput="filterTb('tb-ventas',this.value)">
       </div>
       <div id="fventa" class="fcard">
         <div class="ftitle">Registrar venta</div>
@@ -1768,7 +1771,7 @@
       <div class="kpis" id="kpi-cli"></div>
       <div class="toolbar">
         <button class="btn btn-p" onclick="openModal('modal-cli')">+ Agregar cliente</button>
-        <input class="srch" placeholder="Buscar por nombre, distrito..." oninput="filterTb('tb-cli',this.value)">
+        <input class="srch" id="srch-cli" placeholder="Buscar por nombre, distrito..." oninput="filterTb('tb-cli',this.value)">
       </div>
       <div class="tw">
         <table>
@@ -1803,7 +1806,7 @@
       <div class="kpis" id="kpi-inq"></div>
       <div class="toolbar">
         <button class="btn btn-p" onclick="openF('finq')">+ Registrar consulta</button>
-        <input class="srch" placeholder="Buscar..." oninput="filterTb('tb-inq',this.value)">
+        <input class="srch" id="srch-inq" placeholder="Buscar..." oninput="filterTb('tb-inq',this.value)">
       </div>
       <div id="finq" class="fcard">
         <div class="ftitle">Registrar consulta</div>
@@ -1867,7 +1870,7 @@
       </div>
       <div class="toolbar">
         <button class="btn btn-p" onclick="openModal('modal-prov')">+ Agregar proveedor</button>
-        <input class="srch" placeholder="Buscar proveedor..." oninput="filterTb('tb-prov',this.value)">
+        <input class="srch" id="srch-prov" placeholder="Buscar proveedor..." oninput="filterTb('tb-prov',this.value)">
       </div>
       <div class="tw">
         <table>
@@ -1928,7 +1931,7 @@
       <div class="kpis" id="kpi-sellers"></div>
       <div class="toolbar">
         <button class="btn btn-p" onclick="openModal('modal-seller')">+ Nuevo vendedor</button>
-        <input class="srch" placeholder="Buscar vendedor..." oninput="filterTb('tb-sellers',this.value)">
+        <input class="srch" id="srch-sellers" placeholder="Buscar vendedor..." oninput="filterTb('tb-sellers',this.value)">
       </div>
       <div class="tw">
         <table>
@@ -2296,15 +2299,23 @@
     function gi(id) { return parseInt(document.getElementById(id).value) || 0; }
     function sv(id, v) { document.getElementById(id).value = v || ''; }
     function filterTb(tbId, q) {
-      q = q.toLowerCase();
+      q = (q || '').toLowerCase().trim();
       document.querySelectorAll(`#${tbId} tr`).forEach(r => {
         r.style.display = !q || r.textContent.toLowerCase().includes(q) ? '' : 'none';
       });
     }
-    function filterCol(tbId, col, val) {
-      document.querySelectorAll(`#${tbId} tr`).forEach(r => {
+    function applyInventoryFilter() {
+      const q = (document.getElementById('srch-inv')?.value || '').toLowerCase().trim();
+      const filterCatEl = document.getElementById('filter-cat');
+      const catVal = (filterCatEl?.value || '').trim();
+      const catText = (filterCatEl && filterCatEl.selectedIndex > 0) ? filterCatEl.options[filterCatEl.selectedIndex].text.trim().toLowerCase() : '';
+
+      document.querySelectorAll('#tb-inv tr').forEach(r => {
+        const textMatch = !q || r.textContent.toLowerCase().includes(q);
         const cells = r.querySelectorAll('td');
-        r.style.display = !val || (cells[col] && cells[col].textContent.trim() === val) ? '' : 'none';
+        const rowCat = cells[1] ? cells[1].textContent.trim().toLowerCase() : '';
+        const catMatch = !catVal || (rowCat && rowCat === catText);
+        r.style.display = (textMatch && catMatch) ? '' : 'none';
       });
     }
     // CONTROL DEL MENÚ HAMBURGUESA
@@ -2491,7 +2502,11 @@
         // Rellenar selects de categoría
         const opts = allCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
         const filterEl = document.getElementById('filter-cat');
-        if (filterEl) filterEl.innerHTML = '<option value="">Todas las categorías</option>' + opts;
+        const prevCatVal = filterEl ? filterEl.value : '';
+        if (filterEl) {
+          filterEl.innerHTML = '<option value="">Todas las categorías</option>' + opts;
+          if (prevCatVal) filterEl.value = prevCatVal;
+        }
         const fiCat = document.getElementById('fi-cat');
         if (fiCat) fiCat.innerHTML = '<option value="">Seleccionar...</option>' + opts;
         await refreshProductSelect();
@@ -2550,6 +2565,8 @@
           dl.innerHTML = '<option value="">— Selecciona un vendedor —</option>' +
             allSellers.filter(s => s.status === 'Activo').map(s => `<option value="${s.name}">${s.name}</option>`).join('');
         }
+        const qs = document.getElementById('srch-sellers')?.value;
+        if (qs) filterTb('tb-sellers', qs);
       }
       catch (e) { console.error(e); }
     }
@@ -2637,6 +2654,7 @@
         }).join('');
         refreshProductSelect();
         refreshProviderSelect();
+        applyInventoryFilter();
         // Si hay filas de venta abiertas, re-renderízalas para que tomen los productos cargados
         try { if (typeof renderSaleItems === 'function') renderSaleItems(); } catch (e) { }
       } catch (e) { console.error(e); }
@@ -2940,6 +2958,8 @@
         <button class="btn btn-sm btn-del" onclick="delSale('${s.id}')">🗑️</button>
       </td>
     </tr>`).join('');
+        const qv = document.getElementById('srch-ventas')?.value;
+        if (qv) filterTb('tb-ventas', qv);
       } catch (e) { console.error(e); }
     }
 
@@ -3167,6 +3187,8 @@
         </td>
       </tr>`;
         }).join('');
+        const qc = document.getElementById('srch-cli')?.value;
+        if (qc) filterTb('tb-cli', qc);
       } catch (e) { console.error(e); }
     }
     async function saveClient() {
@@ -3228,6 +3250,8 @@
         <td style="font-size:12px;color:var(--text-2)">${q.no_buy_reason || '—'}</td>
       </tr>`;
         }).join('');
+        const qi = document.getElementById('srch-inq')?.value;
+        if (qi) filterTb('tb-inq', qi);
       } catch (e) { console.error(e); }
     }
     async function saveInquiry() {
@@ -3279,6 +3303,8 @@
       </tr>`;
         }).join('');
         refreshProviderSelect();
+        const qp = document.getElementById('srch-prov')?.value;
+        if (qp) filterTb('tb-prov', qp);
       } catch (e) { console.error(e); }
     }
     async function saveProvider() {

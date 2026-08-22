@@ -31,12 +31,24 @@ app.register_blueprint(inventory_bp)
 with app.app_context():
     try:
         db.create_all()
-        # Migraciones automáticas para nuevas columnas (Supabase / SQLite)
+        # Migraciones automáticas para nuevas tablas y columnas (Supabase / SQLite)
         migrations = [
+            """
+            CREATE TABLE IF NOT EXISTS product_variant (
+                id SERIAL PRIMARY KEY,
+                product_id VARCHAR(10) REFERENCES product(id) ON DELETE CASCADE,
+                name VARCHAR(100) NOT NULL,
+                stock_current INTEGER DEFAULT 0,
+                stock_min INTEGER DEFAULT 1,
+                price_override FLOAT,
+                status VARCHAR(20) DEFAULT 'Activo'
+            );
+            """,
             "ALTER TABLE product ADD COLUMN IF NOT EXISTS commission FLOAT DEFAULT 0.0;",
-            "ALTER TABLE sale_detail ADD COLUMN IF NOT EXISTS commission_at_sale FLOAT DEFAULT 0.0;",
+            "ALTER TABLE seller ADD COLUMN IF NOT EXISTS commission FLOAT DEFAULT 0.0;",
             "ALTER TABLE sale ADD COLUMN IF NOT EXISTS commission_total FLOAT DEFAULT 0.0;",
-            "ALTER TABLE seller ADD COLUMN IF NOT EXISTS commission FLOAT DEFAULT 0.0;"
+            "ALTER TABLE sale_detail ADD COLUMN IF NOT EXISTS commission_at_sale FLOAT DEFAULT 0.0;",
+            "ALTER TABLE sale_detail ADD COLUMN IF NOT EXISTS variant_id INTEGER REFERENCES product_variant(id);"
         ]
         for sql in migrations:
             try:
