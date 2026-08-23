@@ -679,7 +679,7 @@ def export_excel():
     products = Product.query.order_by(Product.name).all()
     style_sheet(ws1,
         ['SKU', 'Nombre', 'Categoría', 'Color', 'Costo', 'P. Venta', 'P. Mayor',
-         'Margen %', 'Stock', 'Stock Min', 'Alerta', 'Proveedor', 'Ubicación', 'Estado'],
+         'Margen %', 'Stock', 'Stock Min', 'Alerta', 'Proveedor', 'Ubicación', 'Imagen', 'Estado'],
         [(p.id, p.name,
           p.category_obj.name if p.category_obj else '',
           p.color or '', p.cost_unit, p.price_retail,
@@ -687,10 +687,11 @@ def export_excel():
           p.stock_current, p.stock_min,
           '⚠' if p.stock_alert else 'OK',
           p.provider.name if p.provider else '',
-          p.location or '', p.status)
+          p.location or '', p.image_url or '', p.status)
          for p in products],
-        [8, 28, 14, 10, 9, 9, 9, 9, 7, 8, 7, 18, 12, 10]
+        [8, 28, 14, 10, 9, 9, 9, 9, 7, 8, 7, 18, 12, 22, 10]
     )
+
 
     # Ventas
     ws2 = wb.create_sheet('Ventas')
