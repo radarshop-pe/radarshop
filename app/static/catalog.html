@@ -760,7 +760,7 @@
                         <input id="pf-name" placeholder="Nombre completo" />
                     </div>
                     <div class="pf-field">
-                        <label>Teléfono (WhatsApp)</label>
+                        <label>Teléfono (WhatsApp) *</label>
                         <input id="pf-phone" placeholder="9XXXXXXXX" type="tel" />
                     </div>
                     <div class="pf-field">
@@ -771,7 +771,7 @@
                         <label>¿Requiere delivery?</label>
                         <select id="pf-delivery">
                             <option value="si">Sí, necesito delivery</option>
-                            <option value="no">No, recojo en punto de encuentro</option>
+                            <option value="no">No, recojo en punto de encuentro en el distrito de San Miguel</option>
                         </select>
                     </div>
                     <div class="pf-field">
@@ -798,10 +798,12 @@
                         Enviar por WhatsApp
                     </button>
                 </div>
-
                 <button class="add-btn" id="btn-continuar" onclick="showProforma()"
                     style="margin-top:12px;display:none">
                     Continuar → Completar proforma
+                </button>
+                <button class="add-btn" id="btn-seguir" onclick="closeCart()" style="margin-top:12px;display:none">
+                    Seguir agregando más productos
                 </button>
             </div>
         </div>
@@ -1016,8 +1018,9 @@
         function sendProforma() {
             const name = document.getElementById('pf-name').value.trim();
             if (!name) { alert('Por favor ingresa tu nombre'); return; }
-            if (!cart.length) { alert('Tu carrito está vacío'); return; }
             const phone = document.getElementById('pf-phone').value.trim();
+            if (!phone) { alert('Por favor ingresa tu teléfono'); return; }
+            if (!cart.length) { alert('Tu carrito está vacío'); return; }
             const district = document.getElementById('pf-district').value.trim();
             const delivery = document.getElementById('pf-delivery').value;
             const notes = document.getElementById('pf-notes').value.trim();
@@ -1027,9 +1030,9 @@
                 `🛍️ *RADARSHOP* — Solicitud de proforma`,
                 `━━━━━━━━━━━━━━━━━━━━`,
                 `👤 *Nombre:* ${name}`,
-                phone ? `📱 *Teléfono:* ${phone}` : null,
+                `📱 *Teléfono:* ${phone}`,
                 district ? `📍 *Distrito:* ${district}` : null,
-                `🚚 *Delivery:* ${delivery === 'si' ? 'Sí requiero delivery' : 'Recojo en punto de encuentro'}`,
+                `🚚 *Delivery:* ${delivery === 'si' ? 'Sí requiero delivery' : 'Recojo en punto de encuentro en el distrito de San Miguel'}`,
                 `━━━━━━━━━━━━━━━━━━━━`,
                 `📦 *PRODUCTOS:*`,
                 items,
@@ -1043,9 +1046,22 @@
 
             // Número de WhatsApp del vendedor seleccionado o número general del negocio
             const seller = selectedSeller?.id ? allSellers.find(s => s.id === selectedSeller.id) : null;
-            const waNumber = (seller && seller.phone)
-                ? seller.phone.replace(/\D/g, '').replace(/^0/, '51')
-                : '51963067986'; // ← REEMPLAZA con el número general de Radarshop
+            // 1. Limpiamos el número de cualquier carácter que no sea dígito
+            let rawNumber = (seller && seller.phone)
+                ? seller.phone.replace(/\D/g, '')
+                : '51963067986'; // Tu número de respaldo ya tiene el 51
+
+            // 2. Lógica inteligente para añadir el código de país (51)
+            // Si el número empieza con '9' y tiene 9 dígitos (formato celular Perú), le ponemos el 51 adelante
+            if (rawNumber.length === 9 && rawNumber.startsWith('9')) {
+                rawNumber = '51' + rawNumber;
+            }
+            // Si por error alguien puso '09...', quitamos el 0 y ponemos 51
+            else if (rawNumber.length === 10 && rawNumber.startsWith('09')) {
+                rawNumber = '51' + rawNumber.substring(1);
+            }
+
+            const waNumber = rawNumber; // ← REEMPLAZA con el número general de Radarshop
 
             window.open(`https://api.whatsapp.com/send?phone=${waNumber}&text=${encodeURIComponent(msg)}`, '_blank');
         }
