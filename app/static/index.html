@@ -9,7 +9,9 @@
   <!-- Optimización de carga para Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
   <script src="https://unpkg.com/html5-qrcode"></script>
   <link rel="icon" type="image/png" href="/static/img/radar_ico.png">
   <link rel="apple-touch-icon" href="/static/img/radar_ico.png">
@@ -1558,6 +1560,24 @@
               <option value="Activo">Activo</option>
               <option value="Inactivo">Inactivo</option>
             </select></div>
+          <div class="field ffield">
+            <label>URL de imagen</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input id="fi-image-url"
+                placeholder="https://raw.githubusercontent.com/usuario/repo/main/img/producto.jpg"
+                oninput="previewImage(this.value)"
+                style="flex:1;padding:8px 11px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-md);border-radius:var(--r);background:var(--bg);color:var(--text);outline:none" />
+              <a id="fi-img-preview-link" href="#" target="_blank" style="display:none">
+                <img id="fi-img-preview" src="" alt="preview"
+                  style="width:52px;height:52px;object-fit:cover;border-radius:var(--r);border:1px solid var(--border-md);cursor:pointer" />
+              </a>
+            </div>
+            <div style="font-size:11px;color:var(--text-3);margin-top:4px">
+              Sube la imagen a GitHub y pega la URL de <strong>raw.githubusercontent.com</strong>
+              · <a href="https://github.com/radarshop-pe/radarshop/upload/main/app/static/img/productos/"
+                target="_blank" style="color:var(--orange)">Subir imagen →</a>
+            </div>
+          </div>
           <div class="field ffield"><label>Notas</label><input id="fi-notes" placeholder="Observaciones opcionales" />
           </div>
           <div class="field ffield"
@@ -1642,7 +1662,8 @@
       <div class="toolbar">
         <button class="btn btn-p" onclick="openF('fventa')">+ Registrar venta</button>
         <input type="hidden" id="fv-id">
-        <input class="srch" id="srch-ventas" placeholder="Buscar por cliente, vendedor..." oninput="filterTb('tb-ventas',this.value)">
+        <input class="srch" id="srch-ventas" placeholder="Buscar por cliente, vendedor..."
+          oninput="filterTb('tb-ventas',this.value)">
       </div>
       <div id="fventa" class="fcard">
         <div class="ftitle">Registrar venta</div>
@@ -1771,7 +1792,8 @@
       <div class="kpis" id="kpi-cli"></div>
       <div class="toolbar">
         <button class="btn btn-p" onclick="openModal('modal-cli')">+ Agregar cliente</button>
-        <input class="srch" id="srch-cli" placeholder="Buscar por nombre, distrito..." oninput="filterTb('tb-cli',this.value)">
+        <input class="srch" id="srch-cli" placeholder="Buscar por nombre, distrito..."
+          oninput="filterTb('tb-cli',this.value)">
       </div>
       <div class="tw">
         <table>
@@ -1931,7 +1953,8 @@
       <div class="kpis" id="kpi-sellers"></div>
       <div class="toolbar">
         <button class="btn btn-p" onclick="openModal('modal-seller')">+ Nuevo vendedor</button>
-        <input class="srch" id="srch-sellers" placeholder="Buscar vendedor..." oninput="filterTb('tb-sellers',this.value)">
+        <input class="srch" id="srch-sellers" placeholder="Buscar vendedor..."
+          oninput="filterTb('tb-sellers',this.value)">
       </div>
       <div class="tw">
         <table>
@@ -2637,7 +2660,9 @@
           const sb = p.stock_current <= 0 ? 'br' : p.stock_alert ? 'ba' : 'bg';
           const varCount = (p.variants && p.variants.length) ? p.variants.length : 0;
           return `<tr onclick='viewProduct(${JSON.stringify(p)})' style="cursor:pointer">
-    <td><span class="cn">${p.name}</span><span class="cc">${p.id}</span></td>
+        <td onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:8px">
+      ${p.image_url ? `<img src="${p.image_url}" alt="" style="width:36px;height:36px;object-fit:cover;border-radius:6px;border:1px solid var(--border);flex-shrink:0" onerror="this.style.display='none'"/>` : '<div style="width:36px;height:36px;border-radius:6px;background:var(--bg);border:1px dashed var(--border-md);flex-shrink:0"></div>'}
+      <div><span class="cn">${p.name}</span><span class="cc">${p.id}</span></div></td>
     <td><span class="badge bgr">${p.category || '—'}</span></td>
     <td>${fmt(p.cost_unit)}</td><td>${fmt(p.price_retail)}</td>
     <td><span class="badge ${mb}">${p.margin_pct}%</span></td>
@@ -2658,6 +2683,17 @@
         // Si hay filas de venta abiertas, re-renderízalas para que tomen los productos cargados
         try { if (typeof renderSaleItems === 'function') renderSaleItems(); } catch (e) { }
       } catch (e) { console.error(e); }
+    }
+    function previewImage(url) {
+      const img = document.getElementById('fi-img-preview');
+      const link = document.getElementById('fi-img-preview-link');
+      if (url && url.startsWith('http')) {
+        img.src = url;
+        img.onerror = () => { link.style.display = 'none'; };
+        img.onload = () => { link.style.display = 'inline'; link.href = url; };
+      } else {
+        link.style.display = 'none';
+      }
     }
     function calcMargin() {
       const cost = gn('fi-cost'), retail = gn('fi-retail');
@@ -2682,6 +2718,7 @@
         : '';
 
       content.innerHTML = `
+        ${p.image_url ? `<div style="text-align:center;margin-bottom:16px"><img src="${p.image_url}" alt="${p.name}" style="max-height:180px;max-width:100%;object-fit:contain;border-radius:var(--r);border:1px solid var(--border-md)"/></div>` : ''}
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; padding:10px">
             <div><label style="font-size:11px; color:var(--text-2)">SKU</label><div style="font-weight:600">${p.id}</div></div>
             <div><label style="font-size:11px; color:var(--text-2)">Estado</label><div><span class="badge ${p.status === 'Activo' ? 'bg' : 'bgr'}">${p.status}</span></div></div>
@@ -2876,7 +2913,8 @@
         commission: gn('fi-commission'),
         stock_current: gi('fi-stock'), stock_min: gi('fi-smin') || 1,
         location: gv('fi-loc'), notes: gv('fi-notes'),
-        status: gv('fi-status')
+        status: gv('fi-status'),
+        image_url: gv('fi-image-url')
       };
       if (!id && hasVariants && tempProductVariants.length > 0) {
         body.variants = tempProductVariants;
@@ -2894,6 +2932,8 @@
       sv('fi-wholesale', p.price_wholesale || 0);
       sv('fi-commission', p.commission || 0);
       sv('fi-stock', p.stock_current); sv('fi-smin', p.stock_min);
+      sv('fi-image-url', p.image_url || '');
+      previewImage(p.image_url || '');
       sv('fi-loc', p.location || ''); sv('fi-notes', p.notes || '');
       document.getElementById('fi-status').value = p.status || 'Activo';
       if (p.category_id) document.getElementById('fi-cat').value = p.category_id;
@@ -2907,7 +2947,7 @@
       setTimeout(() => document.getElementById('finv').scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
     }
     function resetProductForm() {
-      ['fi-id', 'fi-sku', 'fi-name', 'fi-color', 'fi-cost', 'fi-retail', 'fi-wholesale', 'fi-commission', 'fi-stock', 'fi-smin', 'fi-loc', 'fi-notes', 'fi-margin', 'finv-mv-name', 'finv-mv-stock', 'finv-mv-price']
+      ['fi-id', 'fi-sku', 'fi-name', 'fi-color', 'fi-cost', 'fi-retail', 'fi-wholesale', 'fi-commission', 'fi-stock', 'fi-smin', 'fi-loc', 'fi-notes', 'fi-margin', 'finv-mv-name', 'finv-mv-stock', 'finv-mv-price', 'fi-image-url']
         .forEach(id => sv(id, ''));
       document.getElementById('fi-status').value = 'Activo';
       document.getElementById('fi-cat').value = '';
@@ -2916,6 +2956,7 @@
       document.getElementById('fi-has-variants').checked = false;
       tempProductVariants = [];
       toggleVariantSection(false);
+      previewImage('');
     }
     async function delProduct(id) {
       if (!confirm('¿Eliminar producto ' + id + '?')) return;

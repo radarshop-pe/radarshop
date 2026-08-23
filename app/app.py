@@ -1,7 +1,9 @@
 from flask import Flask, send_from_directory, session, jsonify, request
 from flask_cors import CORS
+from flask_talisman import Talisman
 from models import db
 from routes import inventory_bp
+from routes import inventory_bp, catalog_bp
 import os
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -9,6 +11,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 app = Flask(__name__, static_folder='static')
 CORS(app, supports_credentials=True)
+Talisman(app,
+    force_https=False,          # Vercel ya maneja HTTPS
+    strict_transport_security=False,
+    content_security_policy=False  # Activar después cuando optimices JS inline
+)
 
 # ── CONFIGURACIÓN ─────────────────────────────────────────
 db_url = os.environ.get('DATABASE_URL', 'sqlite:///radarshop.db')
@@ -26,6 +33,7 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'local-dev-key-cambiar-e
 
 db.init_app(app)
 app.register_blueprint(inventory_bp)
+app.register_blueprint(catalog_bp)
 
 # ── INICIALIZAR BD ────────────────────────────────────────
 with app.app_context():
@@ -113,6 +121,10 @@ def me():
 def index():
     return send_from_directory(app.static_folder, 'index.html')
 
+@app.route('/catalogo')
+def catalogo():
+    return send_from_directory(app.static_folder, 'catalog.html')
+    
 @app.route('/<path:path>')
 def static_files(path):
     try:

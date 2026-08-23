@@ -233,7 +233,8 @@ def add_product():
         provider_id=d.get('provider_id') or None,
         commission=float(d.get('commission') or 0),
         status='Activo',
-        notes=d.get('notes', '')
+        notes=d.get('notes', ''),
+        image_url=d.get('image_url', '')
     )
     db.session.add(p)
     db.session.flush()
@@ -266,6 +267,7 @@ def update_product(pid):
     p.cost_unit = float(d.get('cost_unit', p.cost_unit))
     p.price_retail = float(d.get('price_retail', p.price_retail))
     p.price_wholesale = float(d.get('price_wholesale') or p.price_wholesale or 0)
+    p.image_url = d.get('image_url', p.image_url)
     
     if p.variants:
         p.stock_current = sum(v.stock_current for v in p.variants if v.status == 'Activo')
@@ -783,3 +785,38 @@ def export_excel():
         as_attachment=True,
         download_name=fname
     )
+    
+    # ── CATÁLOGO PÚBLICO (sin autenticación) ──────────────────
+
+catalog_bp = Blueprint('catalog', __name__)
+
+@catalog_bp.route('/api/catalog/products', methods=['GET'])
+def catalog_products():
+    ps = Product.query.filter_by(status='Activo').order_by(Product.name).all()
+    result = []
+    for p in ps:
+        d = p.to_dict()
+        # Solo exponer campos necesarios (sin costos)
+        result.append({
+            'id': d['id'], 'name': d['name'], 'color': d['color'],
+            'category': d['category'], 'price_retail': d['price_retail'],
+            'price_wholesale': d['price_wholesale'],
+            'stock_current': d['stock_current'], 'stock_min': d['stock_min'],
+            'image_url': d.get('image_url', ''),
+            'has_variants': d['has_variants'],
+            'variants': [{'id': v['id'], 'name': v['name'],
+                          'stock_current': v['stock_current'],
+                          'price_override': v['price_override'],
+                          'status': v['status']}
+                         for v in d['variants'] if v['status'] == 'Activo'],
+            'status': d['status']
+        })
+    return jsonify({'ok': True, 'data': result})
+
+@catalog_bp.route('/api/catalog/sellers', methods=['GET'])
+def catalog_sellers():
+    sellers = Seller.query.filter_by(status='Activo').order_by(Seller.name).all()
+    return jsonify({'ok': True, 'data': [
+        {'id': s.id, 'name': s.name, 'phone': s.phone or '', 'status': s.status}
+        for s in sellers
+    ]})
