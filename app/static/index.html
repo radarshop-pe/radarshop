@@ -3411,19 +3411,19 @@
 
       const lines = [
         `🛒 *RADARSHOP* — Comprobante de compra`,
-        `━━━━━━━━━━━━━━━━━━━━━━`,
+        `━━━━━━━━━━━━━━━━━━━`,
         `📋 *ID Venta:* #${s.id}`,
         `📅 *Fecha:* ${s.date || ''}`,
         `👤 *Cliente:* ${s.client_name || 'General'}`,
         `💳 *Método de pago:* ${s.payment_method || 'Efectivo'}`,
         `🚚 *Tipo de entrega:* ${s.delivery_type || 'Directa'}`,
-        `━━━━━━━━━━━━━━━━━━━━━━`,
+        `━━━━━━━━━━━━━━━━━━━`,
         `📦 *PRODUCTOS:*`,
         items,
-        `━━━━━━━━━━━━━━━━━━━━━━`,
+        `━━━━━━━━━━━━━━━━━━━`,
         s.delivery_cost > 0 ? `🛵 *Delivery:* ${fmt(s.delivery_cost)}` : null,
         `💰 *TOTAL A PAGAR: ${fmt(s.total_income)}*`,
-        `━━━━━━━━━━━━━━━━━━━━━━`,
+        `━━━━━━━━━━━━━━━━━━━`,
         `¡Muchas gracias por tu preferencia! ✨`,
         `_Radarshop — A un click de tu compra_`
       ].filter(Boolean).join('\n');

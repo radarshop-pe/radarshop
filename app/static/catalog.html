@@ -1028,19 +1028,19 @@
             const items = cart.map(i => `▪ ${i.name}${i.varName ? ' — ' + i.varName : ''} x${i.qty} = ${fmt(i.price * i.qty)}`).join('\n');
             const msg = [
                 `🛍️ *RADARSHOP* — Solicitud de proforma`,
-                `━━━━━━━━━━━━━━━━━━━━`,
+                `━━━━━━━━━━━━━━━━━`,
                 `👤 *Nombre:* ${name}`,
                 `📱 *Teléfono:* ${phone}`,
                 district ? `📍 *Distrito:* ${district}` : null,
                 `🚚 *Delivery:* ${delivery === 'si' ? 'Sí requiero delivery' : 'Recojo en punto de encuentro en el distrito de San Miguel'}`,
-                `━━━━━━━━━━━━━━━━━━━━`,
+                `━━━━━━━━━━━━━━━━━`,
                 `📦 *PRODUCTOS:*`,
                 items,
-                `━━━━━━━━━━━━━━━━━━━━`,
+                `━━━━━━━━━━━━━━━━━`,
                 `💰 *Total estimado: ${fmt(cartTotal())}*`,
                 notes ? `📝 *Notas:* ${notes}` : null,
                 `🧑‍💼 *Atender con:* ${sellerName}`,
-                `━━━━━━━━━━━━━━━━━━━━`,
+                `━━━━━━━━━━━━━━━━━`,
                 `_Enviado desde el catálogo de Radarshop 🎯_`
             ].filter(Boolean).join('\n');
 
