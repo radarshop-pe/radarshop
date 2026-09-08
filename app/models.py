@@ -83,6 +83,8 @@ class Product(db.Model):
     commission = db.Column(db.Float, default=0.0)  # Comisión en S/ por unidad vendida
     notes = db.Column(db.String(300))
     image_url = db.Column(db.String(500))
+    image_url_2 = db.Column(db.String(500))
+    description = db.Column(db.String(500))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     sale_details = db.relationship('SaleDetail', backref='product', lazy=True)
     variants = db.relationship('ProductVariant', backref='product', lazy=True, cascade='all, delete-orphan')
@@ -112,6 +114,8 @@ class Product(db.Model):
             'commission': self.commission or 0,
             'status': self.status, 'notes': self.notes,
             'image_url': self.image_url or '',
+            'image_url_2': self.image_url_2 or '',
+            'description': self.description or '',
             'has_variants': len(self.variants) > 0,
             'variants': [v.to_dict() for v in self.variants if v.status == 'Activo']
         }

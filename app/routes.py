@@ -234,7 +234,9 @@ def add_product():
         commission=float(d.get('commission') or 0),
         status='Activo',
         notes=d.get('notes', ''),
-        image_url=d.get('image_url', '')
+        image_url=d.get('image_url', ''),
+        image_url_2=d.get('image_url_2', ''),
+        description=d.get('description', '')
     )
     db.session.add(p)
     db.session.flush()
@@ -268,6 +270,8 @@ def update_product(pid):
     p.price_retail = float(d.get('price_retail', p.price_retail))
     p.price_wholesale = float(d.get('price_wholesale') or p.price_wholesale or 0)
     p.image_url = d.get('image_url', p.image_url)
+    p.image_url_2 = d.get('image_url_2', p.image_url_2)
+    p.description = d.get('description', p.description)
     
     if p.variants:
         p.stock_current = sum(v.stock_current for v in p.variants if v.status == 'Activo')
@@ -804,6 +808,8 @@ def catalog_products():
             'price_wholesale': d['price_wholesale'],
             'stock_current': d['stock_current'], 'stock_min': d['stock_min'],
             'image_url': d.get('image_url', ''),
+            'image_url_2': d.get('image_url_2', ''),
+            'description': d.get('description', ''),
             'has_variants': d['has_variants'],
             'variants': [{'id': v['id'], 'name': v['name'],
                           'stock_current': v['stock_current'],

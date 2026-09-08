@@ -1578,6 +1578,24 @@
                 target="_blank" style="color:var(--orange)">Subir imagen →</a>
             </div>
           </div>
+          <div class="field ffield">
+            <label>Segunda imagen (URL)</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input id="fi-image-url-2" placeholder="https://raw.githubusercontent.com/..."
+                oninput="previewImage2(this.value)"
+                style="flex:1;padding:8px 11px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-md);border-radius:var(--r);background:var(--bg);color:var(--text);outline:none" />
+              <a id="fi-img-preview-link-2" href="#" target="_blank" style="display:none">
+                <img id="fi-img-preview-2" src="" alt="preview 2"
+                  style="width:52px;height:52px;object-fit:cover;border-radius:var(--r);border:1px solid var(--border-md);cursor:pointer" />
+              </a>
+            </div>
+          </div>
+          <div class="field ffield">
+            <label>Descripción del producto</label>
+            <input id="fi-description"
+              placeholder="Breve descripción que verán los clientes en el catálogo (máx. 200 caracteres)"
+              maxlength="200" />
+          </div>
           <div class="field ffield"><label>Notas</label><input id="fi-notes" placeholder="Observaciones opcionales" />
           </div>
           <div class="field ffield"
@@ -2695,6 +2713,15 @@
         link.style.display = 'none';
       }
     }
+    function previewImage2(url) {
+      const img = document.getElementById('fi-img-preview-2');
+      const link = document.getElementById('fi-img-preview-link-2');
+      if (url && url.startsWith('http')) {
+        img.src = url;
+        img.onerror = () => { link.style.display = 'none'; };
+        img.onload = () => { link.style.display = 'inline'; link.href = url; };
+      } else { link.style.display = 'none'; }
+    }
     function calcMargin() {
       const cost = gn('fi-cost'), retail = gn('fi-retail');
       const m = retail > 0 ? Math.round((retail - cost) / retail * 100) : 0;
@@ -2914,7 +2941,9 @@
         stock_current: gi('fi-stock'), stock_min: gi('fi-smin') || 1,
         location: gv('fi-loc'), notes: gv('fi-notes'),
         status: gv('fi-status'),
-        image_url: gv('fi-image-url')
+        image_url: gv('fi-image-url'),
+        image_url_2: gv('fi-image-url-2'),
+        description: gv('fi-description')
       };
       if (!id && hasVariants && tempProductVariants.length > 0) {
         body.variants = tempProductVariants;
@@ -2934,6 +2963,9 @@
       sv('fi-stock', p.stock_current); sv('fi-smin', p.stock_min);
       sv('fi-image-url', p.image_url || '');
       previewImage(p.image_url || '');
+      sv('fi-image-url-2', p.image_url_2 || '');
+      previewImage2(p.image_url_2 || '');
+      sv('fi-description', p.description || '');
       sv('fi-loc', p.location || ''); sv('fi-notes', p.notes || '');
       document.getElementById('fi-status').value = p.status || 'Activo';
       if (p.category_id) document.getElementById('fi-cat').value = p.category_id;
@@ -2947,7 +2979,7 @@
       setTimeout(() => document.getElementById('finv').scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
     }
     function resetProductForm() {
-      ['fi-id', 'fi-sku', 'fi-name', 'fi-color', 'fi-cost', 'fi-retail', 'fi-wholesale', 'fi-commission', 'fi-stock', 'fi-smin', 'fi-loc', 'fi-notes', 'fi-margin', 'finv-mv-name', 'finv-mv-stock', 'finv-mv-price', 'fi-image-url']
+      ['fi-id', 'fi-sku', 'fi-name', 'fi-color', 'fi-cost', 'fi-retail', 'fi-wholesale', 'fi-commission', 'fi-stock', 'fi-smin', 'fi-loc', 'fi-notes', 'fi-margin', 'finv-mv-name', 'finv-mv-stock', 'finv-mv-price', 'fi-image-url', 'fi-image-url-2', 'fi-description']
         .forEach(id => sv(id, ''));
       document.getElementById('fi-status').value = 'Activo';
       document.getElementById('fi-cat').value = '';
@@ -2957,6 +2989,7 @@
       tempProductVariants = [];
       toggleVariantSection(false);
       previewImage('');
+      previewImage2('');
     }
     async function delProduct(id) {
       if (!confirm('¿Eliminar producto ' + id + '?')) return;

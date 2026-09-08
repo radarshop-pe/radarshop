@@ -2,7 +2,6 @@ from flask import Flask, send_from_directory, session, jsonify, request
 from flask_cors import CORS
 from flask_talisman import Talisman
 from models import db
-from routes import inventory_bp
 from routes import inventory_bp, catalog_bp
 import os
 import sys, os
@@ -57,6 +56,8 @@ with app.app_context():
             "ALTER TABLE sale ADD COLUMN IF NOT EXISTS commission_total FLOAT DEFAULT 0.0;",
             "ALTER TABLE sale_detail ADD COLUMN IF NOT EXISTS commission_at_sale FLOAT DEFAULT 0.0;",
             "ALTER TABLE sale_detail ADD COLUMN IF NOT EXISTS variant_id INTEGER REFERENCES product_variant(id);"
+            "ALTER TABLE product ADD COLUMN IF NOT EXISTS image_url_2 VARCHAR(500);",
+"ALTER TABLE product ADD COLUMN IF NOT EXISTS description VARCHAR(500);",
         ]
         for sql in migrations:
             try:
@@ -122,6 +123,9 @@ def index():
     return send_from_directory(app.static_folder, 'index.html')
 
 @app.route('/catalogo')
+@app.route('/catalogo.html')
+@app.route('/catalog')
+@app.route('/catalog.html')
 def catalogo():
     return send_from_directory(app.static_folder, 'catalog.html')
     
