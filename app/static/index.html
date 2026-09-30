@@ -1561,7 +1561,7 @@
               <option value="Inactivo">Inactivo</option>
             </select></div>
           <div class="field ffield">
-            <label>URL de imagen</label>
+            <label>Imagen 1</label>
             <div style="display:flex;gap:8px;align-items:center">
               <input id="fi-image-url"
                 placeholder="https://raw.githubusercontent.com/usuario/repo/main/img/producto.jpg"
@@ -1579,7 +1579,7 @@
             </div>
           </div>
           <div class="field ffield">
-            <label>Segunda imagen (URL)</label>
+            <label>Imagen 2</label>
             <div style="display:flex;gap:8px;align-items:center">
               <input id="fi-image-url-2" placeholder="https://raw.githubusercontent.com/..."
                 oninput="previewImage2(this.value)"
@@ -1624,10 +1624,11 @@
             <div
               style="font-size:11px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">
               + Agregar variante</div>
-            <div style="display:grid;grid-template-columns:1fr 80px 80px 100px auto;gap:8px;align-items:end">
+            <div style="display:grid;grid-template-columns:1fr 140px 80px 80px 100px auto;gap:8px;align-items:end">
               <div class="field"><label>Nombre / Color / Talla *</label><input id="finv-mv-name"
                   placeholder="Ej: Rojo, Talla M, Modelo A" />
               </div>
+              <div class="field"><label>URL Imagen</label><input id="finv-mv-image" placeholder="https://..." /></div>
               <div class="field"><label>Stock</label><input id="finv-mv-stock" type="number" placeholder="0" min="0" />
               </div>
               <div class="field"><label>Stock mín.</label><input id="finv-mv-smin" type="number" placeholder="1" min="0"
@@ -2808,17 +2809,23 @@
       document.getElementById('fi-stock').value = totalStock;
 
       list.innerHTML = `
-        <div style="display:grid;grid-template-columns:1fr 70px 70px 80px 30px;gap:8px;margin-bottom:6px">
+        <div style="display:grid;grid-template-columns:1fr 130px 70px 70px 80px 30px;gap:8px;margin-bottom:6px">
           <span style="font-size:11px;color:var(--text-3);font-weight:600">VARIANTE</span>
+          <span style="font-size:11px;color:var(--text-3);font-weight:600">IMAGEN</span>
           <span style="font-size:11px;color:var(--text-3);font-weight:600">STOCK</span>
           <span style="font-size:11px;color:var(--text-3);font-weight:600">MÍN.</span>
           <span style="font-size:11px;color:var(--text-3);font-weight:600">PRECIO</span>
           <span></span>
         </div>
         ${tempProductVariants.map((v, idx) => `
-          <div style="display:grid;grid-template-columns:1fr 70px 70px 80px 30px;gap:8px;align-items:center;margin-bottom:6px">
+          <div style="display:grid;grid-template-columns:1fr 130px 70px 70px 80px 30px;gap:8px;align-items:center;margin-bottom:6px">
             <input value="${v.name}" oninput="tempProductVariants[${idx}].name=this.value"
               style="padding:6px 9px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-md);border-radius:var(--r);background:var(--bg);color:var(--text);width:100%"/>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input value="${v.image_url || ''}" placeholder="URL imagen" oninput="tempProductVariants[${idx}].image_url=this.value"
+                style="padding:6px 9px;font-size:11px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-md);border-radius:var(--r);background:var(--bg);color:var(--text);width:100%;min-width:0"/>
+              ${v.image_url ? `<img src="${v.image_url}" style="width:28px;height:28px;object-fit:cover;border-radius:5px;flex-shrink:0" onerror="this.style.display='none'"/>` : ''}
+            </div>
             <input type="number" value="${v.stock_current}" oninput="tempProductVariants[${idx}].stock_current=parseInt(this.value)||0;renderTempVariants()"
               style="padding:6px 9px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-md);border-radius:var(--r);background:var(--bg);color:var(--text);width:100%"/>
             <input type="number" value="${v.stock_min}" oninput="tempProductVariants[${idx}].stock_min=parseInt(this.value)||1"
@@ -2835,24 +2842,27 @@
       const prodId = gv('fi-id');
       const name = document.getElementById('finv-mv-name').value.trim();
       if (!name) { toast('El nombre de la variante es requerido', 'er'); return; }
+      const image_url = (document.getElementById('finv-mv-image')?.value || '').trim();
       const stock = parseInt(document.getElementById('finv-mv-stock').value) || 0;
       const smin = parseInt(document.getElementById('finv-mv-smin').value) || 1;
       const priceVal = document.getElementById('finv-mv-price').value;
       const price_override = priceVal ? parseFloat(priceVal) : null;
 
       if (!prodId) {
-        tempProductVariants.push({ name, stock_current: stock, stock_min: smin, price_override, status: 'Activo' });
+        tempProductVariants.push({ name, image_url, stock_current: stock, stock_min: smin, price_override, status: 'Activo' });
         document.getElementById('finv-mv-name').value = '';
+        if (document.getElementById('finv-mv-image')) document.getElementById('finv-mv-image').value = '';
         document.getElementById('finv-mv-stock').value = '';
         document.getElementById('finv-mv-price').value = '';
         renderTempVariants();
       } else {
         try {
           await api('POST', `/api/products/${prodId}/variants`, {
-            name, stock_current: stock, stock_min: smin, price_override
+            name, image_url, stock_current: stock, stock_min: smin, price_override
           });
           toast('Variante agregada');
           document.getElementById('finv-mv-name').value = '';
+          if (document.getElementById('finv-mv-image')) document.getElementById('finv-mv-image').value = '';
           document.getElementById('finv-mv-stock').value = '';
           document.getElementById('finv-mv-price').value = '';
           await loadVariantsInline(prodId);
@@ -2875,8 +2885,9 @@
         document.getElementById('fi-stock').value = totalStock;
 
         list.innerHTML = `
-          <div style="display:grid;grid-template-columns:1fr 70px 70px 80px 80px 30px;gap:8px;margin-bottom:6px">
+          <div style="display:grid;grid-template-columns:1fr 130px 70px 70px 80px 80px 30px;gap:8px;margin-bottom:6px">
             <span style="font-size:11px;color:var(--text-3);font-weight:600">VARIANTE</span>
+            <span style="font-size:11px;color:var(--text-3);font-weight:600">IMAGEN</span>
             <span style="font-size:11px;color:var(--text-3);font-weight:600">STOCK</span>
             <span style="font-size:11px;color:var(--text-3);font-weight:600">MÍN.</span>
             <span style="font-size:11px;color:var(--text-3);font-weight:600">PRECIO</span>
@@ -2884,22 +2895,27 @@
             <span></span>
           </div>
           ${variants.map(v => `
-            <div style="display:grid;grid-template-columns:1fr 70px 70px 80px 80px 30px;gap:8px;align-items:center;margin-bottom:6px">
-              <input value="${v.name}" onchange="updateVariantField(${v.id},'name',this.value)"
-                style="padding:6px 9px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-md);border-radius:var(--r);background:var(--bg);color:var(--text);width:100%"/>
-              <input type="number" value="${v.stock_current}" onchange="updateVariantField(${v.id},'stock_current',this.value)"
-                style="padding:6px 9px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-md);border-radius:var(--r);background:var(--bg);color:var(--text);width:100%"/>
-              <input type="number" value="${v.stock_min}" onchange="updateVariantField(${v.id},'stock_min',this.value)"
-                style="padding:6px 9px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-md);border-radius:var(--r);background:var(--bg);color:var(--text);width:100%"/>
-              <input type="number" value="${v.price_override || ''}" placeholder="Heredar" onchange="updateVariantField(${v.id},'price_override',this.value)"
-                style="padding:6px 9px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-md);border-radius:var(--r);background:var(--bg);color:var(--text);width:100%"/>
-              <select onchange="updateVariantField(${v.id},'status',this.value)"
-                style="padding:6px 9px;font-size:12px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-md);border-radius:var(--r);background:var(--bg);color:var(--text);width:100%">
-                <option ${v.status === 'Activo' ? 'selected' : ''}>Activo</option>
-                <option ${v.status === 'Inactivo' ? 'selected' : ''}>Inactivo</option>
-              </select>
-              <button class="btn btn-sm btn-del" type="button" onclick="delVariantInline(${v.id})" style="padding:4px 7px">×</button>
-            </div>`).join('')}
+          <div style="display:grid;grid-template-columns:1fr 130px 70px 70px 80px 80px 30px;gap:8px;align-items:center;margin-bottom:6px">
+            <input value="${v.name}" onchange="updateVariantField(${v.id},'name',this.value)"
+              style="padding:6px 9px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-md);border-radius:var(--r);background:var(--bg);color:var(--text);width:100%"/>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input value="${v.image_url || ''}" placeholder="URL imagen" onchange="updateVariantField(${v.id},'image_url',this.value)"
+                style="padding:6px 9px;font-size:11px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-md);border-radius:var(--r);background:var(--bg);color:var(--text);width:100%;min-width:0"/>
+              ${v.image_url ? `<img src="${v.image_url}" style="width:28px;height:28px;object-fit:cover;border-radius:5px;flex-shrink:0" onerror="this.style.display='none'"/>` : ''}
+            </div>
+            <input type="number" value="${v.stock_current}" onchange="updateVariantField(${v.id},'stock_current',this.value)"
+              style="padding:6px 9px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-md);border-radius:var(--r);background:var(--bg);color:var(--text);width:100%"/>
+            <input type="number" value="${v.stock_min}" onchange="updateVariantField(${v.id},'stock_min',this.value)"
+              style="padding:6px 9px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-md);border-radius:var(--r);background:var(--bg);color:var(--text);width:100%"/>
+            <input type="number" value="${v.price_override || ''}" placeholder="Heredar" onchange="updateVariantField(${v.id},'price_override',this.value)"
+              style="padding:6px 9px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-md);border-radius:var(--r);background:var(--bg);color:var(--text);width:100%"/>
+            <select onchange="updateVariantField(${v.id},'status',this.value)"
+              style="padding:6px 9px;font-size:12px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-md);border-radius:var(--r);background:var(--bg);color:var(--text);width:100%">
+              <option ${v.status === 'Activo' ? 'selected' : ''}>Activo</option>
+              <option ${v.status === 'Inactivo' ? 'selected' : ''}>Inactivo</option>
+            </select>
+            <button class="btn btn-sm btn-del" onclick="delVariantInline(${v.id})" style="padding:4px 7px">×</button>
+          </div>`).join('')}
         `;
       } catch (e) { console.error(e); }
     }
@@ -2979,7 +2995,7 @@
       setTimeout(() => document.getElementById('finv').scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
     }
     function resetProductForm() {
-      ['fi-id', 'fi-sku', 'fi-name', 'fi-color', 'fi-cost', 'fi-retail', 'fi-wholesale', 'fi-commission', 'fi-stock', 'fi-smin', 'fi-loc', 'fi-notes', 'fi-margin', 'finv-mv-name', 'finv-mv-stock', 'finv-mv-price', 'fi-image-url', 'fi-image-url-2', 'fi-description']
+      ['fi-id', 'fi-sku', 'fi-name', 'fi-color', 'fi-cost', 'fi-retail', 'fi-wholesale', 'fi-commission', 'fi-stock', 'fi-smin', 'fi-loc', 'fi-notes', 'fi-margin', 'finv-mv-name', 'finv-mv-image', 'finv-mv-stock', 'finv-mv-price', 'fi-image-url', 'fi-image-url-2', 'fi-description']
         .forEach(id => sv(id, ''));
       document.getElementById('fi-status').value = 'Activo';
       document.getElementById('fi-cat').value = '';

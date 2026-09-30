@@ -227,7 +227,8 @@ class ProductVariant(db.Model):
     name = db.Column(db.String(100), nullable=False)  # Ej: Rojo, Talla M, Modelo 2
     stock_current = db.Column(db.Integer, default=0)
     stock_min = db.Column(db.Integer, default=1)
-    price_override = db.Column(db.Float, nullable=True)  # None = usa precio del producto padre
+    price_override = db.Column(db.Float, nullable=True)
+    image_url = db.Column(db.String(500))  # None = usa precio del producto padre
     status = db.Column(db.String(20), default='Activo')
 
     def to_dict(self):
@@ -238,6 +239,7 @@ class ProductVariant(db.Model):
             'stock_current': self.stock_current,
             'stock_min': self.stock_min,
             'price_override': self.price_override,
+            'image_url': self.image_url or '',
             'status': self.status,
             'stock_alert': self.stock_current <= self.stock_min
         }

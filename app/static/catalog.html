@@ -5,10 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Radarshop — Catálogo</title>
-	<meta name="description" content="Explora el catálogo oficial de Radarshop. Selecciona tus productos y genera tu proforma de manera rápida para comunicarte con nuestros asesores por WhatsApp.">
+    <meta name="description"
+        content="Explora el catálogo oficial de Radarshop. Selecciona tus productos y genera tu proforma de manera rápida para comunicarte con nuestros asesores por WhatsApp.">
     <!-- Open Graph para Redes Sociales -->
     <meta property="og:title" content="Radarshop — Catálogo">
-    <meta property="og:description" content="A un click de tu compra. Selecciona tus productos y pide tu proforma por WhatsApp.">
+    <meta property="og:description"
+        content="A un click de tu compra. Selecciona tus productos y pide tu proforma por WhatsApp.">
     <meta property="og:type" content="website">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
@@ -976,7 +978,7 @@
             <div class="brand">
                 <div class="brand-icon">
                     <img src="/static/img/radar_ico.png" alt="Logo" onerror="this.src='https://via.placeholder.com/32'">
-                    
+
                 </div>
                 <div>
                     <div class="brand-name">Radarshop</div>
@@ -1323,11 +1325,15 @@
                 varWrap.style.display = 'block';
                 document.getElementById('detail-var-grid').innerHTML = detailProd.variants.map(v => {
                     const outOfStock = v.stock_current <= 0;
-                    return `<div class="var-option ${outOfStock ? 'out' : ''}" onclick="${outOfStock ? '' : `selectVar('${v.id}',${v.price_override || 0},this)`}">
-        <div class="var-name">${v.name}</div>
-        <div class="var-stock">${outOfStock ? 'Sin stock' : `${v.stock_current} disponibles`}</div>
-        ${v.price_override ? `<div class="var-price">${fmt(v.price_override)}</div>` : ''}
-      </div>`;
+                    const thumb = v.image_url
+                        ? `<img src="${v.image_url}" style="width:100%;height:64px;object-fit:cover;border-radius:6px;margin-bottom:6px" onerror="this.style.display='none'"/>`
+                        : '';
+                    return `<div class="var-option ${outOfStock ? 'out' : ''}" onclick="${outOfStock ? '' : `selectVar('${v.id}',${v.price_override || 0},'${(v.image_url || '').replace(/'/g, "\\'")}',this)`}">
+                        ${thumb}
+                        <div class="var-name">${v.name}</div>
+                        <div class="var-stock">${outOfStock ? 'Sin stock' : `${v.stock_current} disponibles`}</div>
+                        ${v.price_override ? `<div class="var-price">${fmt(v.price_override)}</div>` : ''}
+                    </div>`;
                 }).join('');
                 addBtn.disabled = true;
                 addBtn.textContent = 'Selecciona un modelo para continuar';
@@ -1339,7 +1345,7 @@
             openModal('modal-detail');
         }
 
-        function selectVar(varId, priceOverride, el) {
+        function selectVar(varId, priceOverride, varImageUrl, el) {
             document.querySelectorAll('#detail-var-grid .var-option').forEach(v => v.classList.remove('sel'));
             el.classList.add('sel');
             selectedVarId = varId;
@@ -1349,6 +1355,24 @@
             const addBtn = document.getElementById('detail-add-btn');
             addBtn.disabled = false;
             addBtn.textContent = `+ Agregar "${varName}" al pedido`;
+
+            // Actualizar imagen del modal si la variante tiene imagen propia
+            if (varImageUrl) {
+                const imgsWrap = document.getElementById('detail-imgs-wrap');
+                const existing = imgsWrap.querySelector('img');
+                if (existing) {
+                    existing.style.transition = 'opacity .25s';
+                    existing.style.opacity = '0';
+                    setTimeout(() => {
+                        existing.src = varImageUrl;
+                        existing.style.opacity = '1';
+                    }, 200);
+                } else {
+                    imgsWrap.innerHTML = `<div class="detail-imgs single">
+                        <img class="detail-img" src="${varImageUrl}" alt="${varName}" onerror="this.style.display='none'"/>
+                    </div>`;
+                }
+            }
         }
 
         function addSelectedToCart() {
@@ -1357,7 +1381,8 @@
             const varName = varObj ? varObj.name : null;
             const price = selectedVarPrice > 0 ? selectedVarPrice : detailProd.price_retail;
             const key = detailProd.id + (selectedVarId ? '-' + selectedVarId : '');
-            addToCart({ key, prodId: detailProd.id, varId: selectedVarId, varName, name: detailProd.name, price, image: detailProd.image_url || '' });
+            const image = (varObj && varObj.image_url) ? varObj.image_url : (detailProd.image_url || '');
+            addToCart({ key, prodId: detailProd.id, varId: selectedVarId, varName, name: detailProd.name, price, image });
             closeModal('modal-detail');
         }
 
@@ -1378,29 +1403,29 @@
             updateCartCount();
             showToast(`✓ "${item.name}${item.varName ? ' — ' + item.varName : ''}" agregado`);
         }
-        function removeFromCart(key) { 
+        function removeFromCart(key) {
             if (!Array.isArray(cart)) cart = [];
-            cart = cart.filter(i => i.key !== key); 
+            cart = cart.filter(i => i.key !== key);
             saveCartToStorage();
-            updateCartCount(); 
-            renderCartItems(); 
+            updateCartCount();
+            renderCartItems();
         }
-        function changeQty(key, d) { 
+        function changeQty(key, d) {
             if (!Array.isArray(cart)) cart = [];
-            const i = cart.find(x => x.key === key); 
-            if (i) { 
-                i.qty = Math.max(1, (i.qty || 1) + d); 
+            const i = cart.find(x => x.key === key);
+            if (i) {
+                i.qty = Math.max(1, (i.qty || 1) + d);
                 saveCartToStorage();
-                renderCartItems(); 
-            } 
+                renderCartItems();
+            }
         }
-        function updateCartCount() { 
+        function updateCartCount() {
             const count = (cart || []).reduce((a, i) => a + (parseInt(i.qty) || 0), 0);
             const countEl = document.getElementById('cart-count');
             if (countEl) countEl.textContent = count;
         }
-        function cartTotal() { 
-            return (cart || []).reduce((a, i) => a + ((parseFloat(i.price) || 0) * (parseInt(i.qty) || 1)), 0); 
+        function cartTotal() {
+            return (cart || []).reduce((a, i) => a + ((parseFloat(i.price) || 0) * (parseInt(i.qty) || 1)), 0);
         }
 
         function openCart() {
@@ -1521,7 +1546,7 @@
             }
 
             const waNumber = rawNumber; // ← REEMPLAZA con el número general de Radarshop
-			// Vaciar carrito al enviar proforma (descomentar si lo deseas)
+            // Vaciar carrito al enviar proforma (descomentar si lo deseas)
             cart = []; saveCartToStorage(); updateCartCount();
 
             window.open(`https://api.whatsapp.com/send?phone=${waNumber}&text=${encodeURIComponent(msg)}`, '_blank');

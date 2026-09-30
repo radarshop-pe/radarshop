@@ -250,6 +250,7 @@ def add_product():
                 stock_current=int(vdata.get('stock_current', 0)),
                 stock_min=int(vdata.get('stock_min', 1)),
                 price_override=float(vdata['price_override']) if vdata.get('price_override') else None,
+                image_url=vdata.get('image_url', ''),
                 status=vdata.get('status', 'Activo')
             )
             db.session.add(v)
@@ -441,6 +442,7 @@ def add_variant(pid):
         stock_current=int(d.get('stock_current', 0)),
         stock_min=int(d.get('stock_min', 1)),
         price_override=float(d['price_override']) if d.get('price_override') else None,
+        image_url=d.get('image_url', ''),
         status='Activo'
     )
     db.session.add(v)
@@ -460,6 +462,7 @@ def update_variant(vid):
     v.stock_current = int(d.get('stock_current', v.stock_current))
     v.stock_min = int(d.get('stock_min', v.stock_min))
     v.price_override = float(d['price_override']) if d.get('price_override') else None
+    v.image_url = d.get('image_url', v.image_url)
     v.status = d.get('status', v.status)
     # Actualizar stock del producto padre
     prod = Product.query.get(v.product_id)
@@ -814,6 +817,7 @@ def catalog_products():
             'variants': [{'id': v['id'], 'name': v['name'],
                           'stock_current': v['stock_current'],
                           'price_override': v['price_override'],
+                          'image_url': v.get('image_url', ''),
                           'status': v['status']}
                          for v in d['variants'] if v['status'] == 'Activo'],
             'status': d['status']

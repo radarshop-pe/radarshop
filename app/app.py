@@ -57,7 +57,8 @@ with app.app_context():
             "ALTER TABLE sale_detail ADD COLUMN IF NOT EXISTS commission_at_sale FLOAT DEFAULT 0.0;",
             "ALTER TABLE sale_detail ADD COLUMN IF NOT EXISTS variant_id INTEGER REFERENCES product_variant(id);"
             "ALTER TABLE product ADD COLUMN IF NOT EXISTS image_url_2 VARCHAR(500);",
-"ALTER TABLE product ADD COLUMN IF NOT EXISTS description VARCHAR(500);",
+            "ALTER TABLE product ADD COLUMN IF NOT EXISTS description VARCHAR(500);",
+            "ALTER TABLE product_variant ADD COLUMN IF NOT EXISTS image_url VARCHAR(500);",
         ]
         for sql in migrations:
             try:
