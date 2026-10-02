@@ -585,23 +585,20 @@
 
             document.getElementById('detail-price').textContent = fmt(selectedVarPrice);
 
-            // Sincronizar el carrusel de imágenes del modal con la imagen de la variante seleccionada
-            if (v.image_url) {
-                const slider = document.getElementById('detail-slider-box');
-                if (slider) {
-                    const imgs = Array.from(slider.querySelectorAll('.detail-img'));
-                    // Buscamos si la imagen de esta variante coincide con alguna de las fotos del carrusel
-                    const targetImgIndex = imgs.findIndex(img => img.src.includes(v.image_url) || v.image_url.includes(img.src));
+            // S sincronización limpia por índice o posición de la variante
+            const slider = document.getElementById('detail-slider-box');
+            if (slider) {
+                const imgs = Array.from(slider.querySelectorAll('.detail-img'));
+                if (imgs.length > 0) {
+                    // Encontramos el índice de la variante dentro del arreglo de variantes del producto
+                    const variantIndex = detailProd.variants.indexOf(v);
 
-                    if (targetImgIndex !== -1) {
-                        const imgWidth = imgs[0].clientWidth + 8; // Ancho + gap
-                        slider.scrollTo({ left: targetImgIndex * imgWidth, behavior: 'smooth' });
-                    } else {
-                        // Si por alguna razón la variante tiene una imagen única que no estaba en el array principal, la actualizamos
-                        updateModalImagePreview(v.image_url, v.name);
-                    }
-                } else {
-                    updateModalImagePreview(v.image_url, v.name);
+                    // Si el índice existe en las imágenes del carrusel, nos movemos a él. 
+                    // Si hay más variantes que fotos, por defecto nos vamos a la primera o la que coincida.
+                    const targetIndex = variantIndex >= 0 && variantIndex < imgs.length ? variantIndex : 0;
+
+                    const imgWidth = imgs[0].clientWidth + 8; // Ancho + gap
+                    slider.scrollTo({ left: targetIndex * imgWidth, behavior: 'smooth' });
                 }
             }
 
