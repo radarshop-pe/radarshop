@@ -639,11 +639,15 @@ body {
 .detail-img {
     flex: 0 0 100%;
     width: 100%;
-    height: 240px;
+    height: auto;
+    /* Permite que la altura sea automática según la proporción de la foto */
+    max-height: 320px;
+    /* Ponemos un límite máximo para que no sea muy alta en PC */
     object-fit: contain;
-    /* Evita el zoom exagerado y corte de imágenes */
+    /* Muestra la imagen completa sin recortar ningún borde */
     border-radius: var(--r);
     background: var(--bg);
+    /* Fondo limpio si sobra espacio a los lados */
     scroll-snap-align: center;
     transition: opacity .25s ease-in-out;
 }
