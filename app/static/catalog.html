@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Radarshop — Catálogo</title>
     <meta name="description"
         content="Explora el catálogo oficial de Radarshop. Selecciona tus productos y genera tu proforma de manera rápida para comunicarte con nuestros asesores por WhatsApp.">
@@ -585,8 +585,24 @@
 
             document.getElementById('detail-price').textContent = fmt(selectedVarPrice);
 
+            // Sincronizar el carrusel de imágenes del modal con la imagen de la variante seleccionada
             if (v.image_url) {
-                updateModalImagePreview(v.image_url, v.name);
+                const slider = document.getElementById('detail-slider-box');
+                if (slider) {
+                    const imgs = Array.from(slider.querySelectorAll('.detail-img'));
+                    // Buscamos si la imagen de esta variante coincide con alguna de las fotos del carrusel
+                    const targetImgIndex = imgs.findIndex(img => img.src.includes(v.image_url) || v.image_url.includes(img.src));
+
+                    if (targetImgIndex !== -1) {
+                        const imgWidth = imgs[0].clientWidth + 8; // Ancho + gap
+                        slider.scrollTo({ left: targetImgIndex * imgWidth, behavior: 'smooth' });
+                    } else {
+                        // Si por alguna razón la variante tiene una imagen única que no estaba en el array principal, la actualizamos
+                        updateModalImagePreview(v.image_url, v.name);
+                    }
+                } else {
+                    updateModalImagePreview(v.image_url, v.name);
+                }
             }
 
             const maxStock = v.stock_current || 9999;
@@ -761,8 +777,23 @@
         function scrollDetailImg(direction) {
             const slider = document.getElementById('detail-slider-box');
             if (!slider) return;
-            const imgWidth = slider.clientWidth;
-            slider.scrollBy({ left: direction * imgWidth, behavior: 'smooth' });
+            const images = slider.querySelectorAll('.detail-img');
+            if (!images.length) return;
+
+            // Calculamos el índice actual basado en el scroll
+            const imgWidth = images[0].clientWidth + 8; // ancho + gap
+            let currentIndex = Math.round(slider.scrollLeft / imgWidth);
+
+            let newIndex = currentIndex + direction;
+
+            // Comportamiento cíclico (si pasa del final, vuelve al inicio, y viceversa)
+            if (newIndex >= images.length) {
+                newIndex = 0;
+            } else if (newIndex < 0) {
+                newIndex = images.length - 1;
+            }
+
+            slider.scrollTo({ left: newIndex * imgWidth, behavior: 'smooth' });
         }
 
         function sendProforma() {
