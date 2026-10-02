@@ -585,20 +585,19 @@
 
             document.getElementById('detail-price').textContent = fmt(selectedVarPrice);
 
-            // S sincronización limpia por índice o posición de la variante
+            // Sincronización exacta por coincidencia de la URL de la imagen de la variante
             const slider = document.getElementById('detail-slider-box');
-            if (slider) {
+            if (slider && v.image_url) {
                 const imgs = Array.from(slider.querySelectorAll('.detail-img'));
                 if (imgs.length > 0) {
-                    // Encontramos el índice de la variante dentro del arreglo de variantes del producto
-                    const variantIndex = detailProd.variants.indexOf(v);
+                    // Buscamos la imagen en el carrusel que coincida con la URL de la variante
+                    let targetIndex = imgs.findIndex(img => img.src.includes(v.image_url) || v.image_url.includes(img.src));
 
-                    // Si el índice existe en las imágenes del carrusel, nos movemos a él. 
-                    // Si hay más variantes que fotos, por defecto nos vamos a la primera o la que coincida.
-                    const targetIndex = variantIndex >= 0 && variantIndex < imgs.length ? variantIndex : 0;
-
-                    const imgWidth = imgs[0].clientWidth + 8; // Ancho + gap
-                    slider.scrollTo({ left: targetIndex * imgWidth, behavior: 'smooth' });
+                    // Si la encuentra, deslizamos hacia esa foto exacta
+                    if (targetIndex !== -1) {
+                        const imgWidth = imgs[0].clientWidth + 8; // Ancho + gap
+                        slider.scrollTo({ left: targetIndex * imgWidth, behavior: 'smooth' });
+                    }
                 }
             }
 
