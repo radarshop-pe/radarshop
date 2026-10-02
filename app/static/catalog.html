@@ -581,31 +581,57 @@
             if (el) el.classList.add('sel');
 
             selectedVarId = v.id;
-            selectedVarPrice = (v.price_override && v.price_override > 0) ? v.price_override : detailProd.price_retail;
+            selectedVarPrice = (v.price_override && v.price_override > 0)
+                ? v.price_override : detailProd.price_retail;
 
             document.getElementById('detail-price').textContent = fmt(selectedVarPrice);
 
-            // Sincronización exacta por coincidencia de la URL de la imagen de la variante
+            // ── IMAGEN DE VARIANTE ────────────────────────────────────
             const slider = document.getElementById('detail-slider-box');
-            if (slider && v.image_url) {
-                const imgs = Array.from(slider.querySelectorAll('.detail-img'));
-                if (imgs.length > 0) {
-                    // Buscamos la imagen en el carrusel que coincida con la URL de la variante
-                    let targetIndex = imgs.findIndex(img => img.src.includes(v.image_url) || v.image_url.includes(img.src));
+            if (slider) {
+                // 1. Limpiar imagen de variante anterior
+                slider.querySelectorAll('[data-variant-img]').forEach(n => n.remove());
 
-                    // Si la encuentra, deslizamos hacia esa foto exacta
-                    if (targetIndex !== -1) {
-                        const imgWidth = imgs[0].clientWidth + 8; // Ancho + gap
-                        slider.scrollTo({ left: targetIndex * imgWidth, behavior: 'smooth' });
+                if (v.image_url) {
+                    const sliderImgs = Array.from(slider.querySelectorAll('.detail-img'));
+
+                    // 2. Comparar por el segmento final de la URL (robusto contra http vs https, dominios, etc.)
+                    const tail = url => (url || '').split('?')[0].split('/').filter(Boolean).slice(-2).join('/');
+                    const varTail = tail(v.image_url);
+                    const matchIdx = sliderImgs.findIndex(img => tail(img.src) === varTail || tail(img.getAttribute('src')) === varTail);
+
+                    if (matchIdx !== -1) {
+                        // Ya existe en el slider — scroll hacia ella
+                        const imgW = sliderImgs[matchIdx].offsetWidth || sliderImgs[matchIdx].getBoundingClientRect().width;
+                        const gap = 8;
+                        slider.scrollTo({ left: matchIdx * (imgW + gap), behavior: 'smooth' });
+                    } else {
+                        // No existe — inyectar al inicio
+                        const varImg = document.createElement('img');
+                        varImg.className = 'detail-img';
+                        varImg.src = v.image_url;
+                        varImg.alt = v.name;
+                        varImg.setAttribute('data-variant-img', 'true');
+                        varImg.onerror = function () { this.style.display = 'none'; };
+                        slider.insertBefore(varImg, slider.firstChild);
+                        // setTimeout > rAF porque necesitamos que el layout ya resolvió el ancho
+                        setTimeout(() => slider.scrollTo({ left: 0, behavior: 'smooth' }), 50);
                     }
+                } else {
+                    // Variante sin imagen propia — volver a la primera imagen del producto
+                    slider.scrollTo({ left: 0, behavior: 'smooth' });
                 }
             }
 
+            // Stock y cantidad
             const maxStock = v.stock_current || 9999;
-            if (detailQty > maxStock) detailQty = Math.max(1, maxStock);
-            document.getElementById('detail-qty-val').textContent = detailQty;
+            if (typeof detailQty !== 'undefined' && detailQty > maxStock) {
+                detailQty = Math.max(1, maxStock);
+            }
+            const qtyEl = document.getElementById('detail-qty-val');
+            if (qtyEl && typeof detailQty !== 'undefined') qtyEl.textContent = detailQty;
 
-            updateDetailAddButton();
+            if (typeof updateDetailAddButton === 'function') updateDetailAddButton();
         }
 
         // MODIFICADO: Ahora ya NO cierra el modal automáticamente para que puedas seguir comprando
