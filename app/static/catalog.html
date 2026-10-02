@@ -510,9 +510,22 @@
             const imgs = [detailProd.image_url, detailProd.image_url_2].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i);
             const imgsWrap = document.getElementById('detail-imgs-wrap');
             if (imgs.length) {
-                imgsWrap.innerHTML = `<div class="detail-imgs ${imgs.length === 1 ? 'single' : ''}">
-      ${imgs.map(url => `<img class="detail-img" src="${url}" alt="${detailProd.name}" onerror="this.style.display='none'"/>`).join('')}
-    </div>`;
+                let navButtonsHtml = '';
+                if (imgs.length > 1) {
+                    navButtonsHtml = `
+                        <button type="button" class="detail-carousel-btn detail-prev" onclick="scrollDetailImg(-1)">&#10094;</button>
+                        <button type="button" class="detail-carousel-btn detail-next" onclick="scrollDetailImg(1)">&#10095;</button>
+                    `;
+                }
+
+                imgsWrap.innerHTML = `
+                    <div class="detail-imgs-container" style="position:relative;">
+                        <div class="detail-imgs ${imgs.length === 1 ? 'single' : ''}" id="detail-slider-box">
+                            ${imgs.map((url, idx) => `<img class="detail-img" data-index="${idx}" src="${url}" alt="${detailProd.name}" onerror="this.style.display='none'"/>`).join('')}
+                        </div>
+                        ${navButtonsHtml}
+                    </div>
+                `;
             } else {
                 imgsWrap.innerHTML = `<div style="height:120px;display:flex;align-items:center;justify-content:center;font-size:52px;color:var(--text-3);opacity:.3">🛍️</div>`;
             }
@@ -744,6 +757,12 @@
             document.querySelectorAll('.seller-opt').forEach(s => s.classList.remove('sel'));
             el.classList.add('sel');
             selectedSeller = { id, name, phone };
+        }
+        function scrollDetailImg(direction) {
+            const slider = document.getElementById('detail-slider-box');
+            if (!slider) return;
+            const imgWidth = slider.clientWidth;
+            slider.scrollBy({ left: direction * imgWidth, behavior: 'smooth' });
         }
 
         function sendProforma() {
