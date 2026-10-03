@@ -1258,3 +1258,53 @@ body {
 .detail-next {
     right: 8px;
 }
+
+/* ==========================================
+   MEJORA DE FILTROS PARA MÓVIL (CORREGIDO)
+   ================================---------- */
+@media (max-width: 768px) {
+    .filters-bar {
+        padding: 10px 12px;
+    }
+
+    .filters-inner {
+        gap: 6px;
+    }
+
+    .filter-row {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        /* Fuerza a que nunca bajen a la siguiente línea */
+        overflow-x: auto !important;
+        /* Habilita el scroll horizontal */
+        overflow-y: hidden;
+        gap: 6px;
+        padding-bottom: 6px;
+        width: 100%;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .filter-row::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Ocultamos las etiquetas de texto "CATEGORÍA:" y "PRECIO:" en móvil */
+    .filter-label {
+        display: none !important;
+    }
+
+    .tag {
+        padding: 6px 12px;
+        font-size: 12px;
+        flex: 0 0 auto !important;
+        /* Evita que los botones se compriman o se estiren */
+        white-space: nowrap;
+    }
+
+    .search-input {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+}
